@@ -88,6 +88,16 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# --- DATE FORMATTER HELPER ---
+def format_datetime_str(dt_str):
+    """Parses an ISO format timestamp and returns a user-friendly string."""
+    try:
+        # Tries to parse assuming full ISO string with timezone (from db)
+        dt_obj = datetime.fromisoformat(dt_str.split('+')[0]) # splits on '+' to ignore TZ
+        return dt_obj.strftime("%b %d, %Y at %I:%M %p") # e.g., "May 01, 2026 at 11:34 PM"
+    except (ValueError, TypeError):
+        return dt_str # return the original if it fails for some reason
+
 # --- STATE ---
 if 'visible_count_breakouts' not in st.session_state: st.session_state.visible_count_breakouts = 3
 if 'visible_count_trendlines' not in st.session_state: st.session_state.visible_count_trendlines = 3
@@ -204,7 +214,7 @@ def render_setup_tab(category_name, state_key):
                 stop = c2.number_input("Stop", value=float(sl), key=f"s_{f}")
                 
                 if st.button("📝 Log Trade", use_container_width=True, type="primary", key=f"l_{f}"):
-                    db.log_trade(user_ticker, ent, stop, f"Category: {category_name}", full_path)
+                    db.log_trade(user_ticker, ent, stop, "", full_path) # Logs an empty string for notes
                     st.success("Logged!")
             else:
                 st.caption("Enter ticker to load technicals")
@@ -234,11 +244,29 @@ with t5:
     if not journal.empty:
         for _, row in journal.iterrows():
             st.markdown(f'<div class="journal-row">', unsafe_allow_html=True)
-            risk = ((row['entry'] - row['atr_sl']) / row['entry']) * 100 if row['entry'] > 0 else 0
             
-            # Cleaner Info Display
-            st.markdown(f"<b style='color:#3B82F6;'>{row['ticker']}</b> | Ent: ${row['entry']:.2f} | SL: ${row['atr_sl']:.2f} (-{risk:.1f}%)", unsafe_allow_html=True)
-            st.caption(f"Date: {row['timestamp']}")
+            # Risk calculation for display
+            risk_pct = 0
+            if row['entry'] > 0 and row['atr_sl'] > 0:
+                risk_pct = ((row['entry'] - row['atr_sl']) / row['entry']) * 100
+            risk_display = f"(-{risk_pct:.1f}%)" if risk_pct > 0 else ""
+
+            # --- Refactored Mobile Trade Display (segmented) ---
+            html_trade_info = f"""
+            <div style="font-size: 1.1rem; margin-bottom: 6px;">
+                <span style="color: #3B82F6; font-weight: bold;">{row['ticker']}</span> 
+                <span style="color: #475569; margin: 0 8px;">|</span>
+                <span style="color: #94A3B8;">Entry:</span> 
+                <span style="color: #E2E8F0; font-weight: bold;">${row['entry']:.2f}</span> 
+                <span style="color: #475569; margin: 0 8px;">|</span>
+                <span style="color: #94A3B8;">SL:</span> 
+                <span style="color: #EF4444; font-weight: bold;">${row['atr_sl']:.2f} <span style="font-size: 0.85em; font-weight: normal;">{risk_display}</span></span>
+            </div>
+            """
+            st.markdown(html_trade_info, unsafe_allow_html=True)
+            
+            # --- Better Date Formatting ---
+            st.caption(f"Logged on: {format_datetime_str(row['timestamp'])}")
             
             # --- IMPROVED MOBILE IMAGE VIEW ---
             c1, c2 = st.columns(2)
@@ -252,8 +280,8 @@ with t5:
             if show_img and row.get('image_data'):
                 decoded = base64.b64decode(row['image_data'])
                 st.image(decoded, use_container_width=True)
-                # Quick Download Button for Mobile Pinch-to-zoom
-                st.download_button("💾 Download to Zoom", decoded, file_name=f"{row['ticker']}_chart.png", mime="image/png", use_container_width=True)
+                # Quick Download Button was here, now deleted.
                 
+            # Notes field: now pre-populated with empty string
             st.text_input("Notes:", value=row['notes'], key=f"n_{row['id']}", on_change=lambda r=row['id']: db.update_notes(r, st.session_state[f"n_{r}"]))
             st.markdown('</div>', unsafe_allow_html=True)

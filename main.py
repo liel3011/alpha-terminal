@@ -247,9 +247,27 @@ with t1: render_setup_tab("breakouts", "visible_count_breakouts")
 with t2: render_setup_tab("trendlines", "visible_count_trendlines")
 with t3: render_setup_tab("fibonacci", "visible_count_fibonacci")
 with t4:
-    st.subheader("Upcoming Earnings")
+    st.markdown("<h3 style='color: white;'>📅 Upcoming Earnings Scanner</h3>", unsafe_allow_html=True)
     df = get_upcoming_earnings()
-    if not df.empty: st.dataframe(df, use_container_width=True, hide_index=True)
+    if not df.empty:
+        # פונקציית עיצוב חכמה לטבלה
+        def style_days(val):
+            if val <= 3: color = '#EF4444' # אדום בוהק
+            elif val <= 7: color = '#F59E0B' # כתום
+            else: color = '#10B981' # ירוק
+            return f'color: {color}; font-weight: bold;'
+
+        # הכנת הטבלה עם אייקונים וכותרות יפות
+        df_display = df.copy()
+        df_display.columns = ["Ticker", "📅 Report Date", "⏳ Days Left"]
+        
+        st.dataframe(
+            df_display.style.applymap(style_days, subset=['⏳ Days Left']),
+            use_container_width=True,
+            hide_index=True
+        )
+    else:
+        st.info("No earnings reports found for major tickers.")
 
 with t5:
     st.subheader("Trading Journal")

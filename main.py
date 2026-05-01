@@ -215,7 +215,8 @@ def render_setup_tab(category_name, state_key):
                 stop = c2.number_input("Stop", value=float(sl), key=f"s_{f}")
                 
                 if st.button("📝 Log Trade", use_container_width=True, type="primary", key=f"l_{f}"):
-                    db.log_trade(user_ticker, ent, stop, f"Category: {category_name}", full_path)
+                    # הפיכת ה-Notes לריק כברירת מחדל
+                    db.log_trade(user_ticker, ent, stop, "", full_path)
                     st.success("Logged!")
             else:
                 st.caption("Enter ticker to load technicals")
@@ -246,8 +247,16 @@ with t5:
         for _, row in journal.iterrows():
             st.markdown(f'<div class="journal-row">', unsafe_allow_html=True)
             risk = ((row['entry'] - row['atr_sl']) / row['entry']) * 100 if row['entry'] > 0 else 0
-            st.markdown(f"<b style='color:#3B82F6;'>{row['ticker']}</b> | Ent: ${row['entry']:.2f} | SL: ${row['atr_sl']:.2f} (-{risk:.1f}%)", unsafe_allow_html=True)
-            st.caption(f"Date: {row['timestamp']}")
+            
+            # עיצוב מחדש של שורת הנתונים למניעת בריחת טקסט
+            st.markdown(f"**{row['ticker']}** | Ent: **${row['entry']:.2f}** | SL: <span style='color:#EF4444; font-weight:bold;'>${row['atr_sl']:.2f} (-{risk:.1f}%)</span>", unsafe_allow_html=True)
+            
+            # עיצוב תאריך מסודר
+            try:
+                clean_date = pd.to_datetime(row['timestamp']).strftime('%d/%m/%Y %H:%M')
+            except:
+                clean_date = row['timestamp']
+            st.caption(f"📅 {clean_date}")
             
             c1, c2 = st.columns(2)
             with c1: show_img = st.toggle("🔍 View Chart", key=f"show_{row['id']}")
@@ -259,7 +268,6 @@ with t5:
             if show_img and row.get('image_data'):
                 decoded = base64.b64decode(row['image_data'])
                 st.image(decoded, use_container_width=True)
-                st.download_button("💾 Download to Zoom", decoded, file_name=f"{row['ticker']}_chart.png", mime="image/png", use_container_width=True)
                 
-            st.text_input("Notes:", value=row['notes'], key=f"n_{row['id']}", on_change=lambda r=row['id']: db.update_notes(r, st.session_state[f"n_{r}"]))
+            st.text_input("Notes:", value=row['notes'], key=f"n_{row['id']}", placeholder="Add your notes here...", on_change=lambda r=row['id']: db.update_notes(r, st.session_state[f"n_{r}"]))
             st.markdown('</div>', unsafe_allow_html=True)

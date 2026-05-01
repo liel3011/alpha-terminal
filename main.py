@@ -16,7 +16,7 @@ except ImportError as e:
 
 # --- INITIALIZATION ---
 load_dotenv()
-st.set_page_config(page_title="Alpha Terminal", layout="wide", page_icon="⚡", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Market Terminal", layout="wide", page_icon="⚡", initial_sidebar_state="collapsed")
 db = DatabaseManager()
 
 # --- HIGH-END PROFESSIONAL CSS (FIXED & MINIMIZED TOP) ---

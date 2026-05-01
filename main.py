@@ -262,7 +262,7 @@ with t4:
         df_display.columns = ["Ticker", "📅 Report Date", "⏳ Days Left"]
         
         st.dataframe(
-            df_display.style.applymap(style_days, subset=['⏳ Days Left']),
+            df_display.style.map(style_days, subset=['⏳ Days Left']),
             use_container_width=True,
             hide_index=True
         )

@@ -193,9 +193,13 @@ def render_setup_tab(category_name, state_key):
         for f, original_ticker in unique_setups[:st.session_state[state_key]]:
             full_path = os.path.join(img_dir, f)
             st.markdown(f'<div class="setup-card">', unsafe_allow_html=True)
+            
+            # --- TICKER INPUT FIRST (NO LABEL) ---
+            user_ticker = st.text_input("", value="" if original_ticker in placeholders else original_ticker, key=f"t_{f}", label_visibility="collapsed").upper().strip()
+            
+            # --- IMAGE SECOND ---
             st.image(full_path, use_container_width=True)
             
-            user_ticker = st.text_input("Ticker:", value="" if original_ticker in placeholders else original_ticker, key=f"t_{f}").upper().strip()
             techs = get_technical_data(user_ticker) if user_ticker else None
 
             if techs:
@@ -215,7 +219,6 @@ def render_setup_tab(category_name, state_key):
                 stop = c2.number_input("Stop", value=float(sl), key=f"s_{f}")
                 
                 if st.button("📝 Log Trade", use_container_width=True, type="primary", key=f"l_{f}"):
-                    # Logging with empty string for new entries
                     db.log_trade(user_ticker, ent, stop, "", full_path)
                     st.success("Logged!")
             else:
@@ -248,7 +251,6 @@ with t5:
             st.markdown(f'<div class="journal-row">', unsafe_allow_html=True)
             risk = ((row['entry'] - row['atr_sl']) / row['entry']) * 100 if row['entry'] > 0 else 0
             
-            # תיקון תצוגת נתונים ב-HTML נקי למניעת שבירת קוד ויזואלית
             html_info = f"""
             <div style='font-size: 1rem; margin-bottom: 5px;'>
                 <b style='color:#3B82F6;'>{row['ticker']}</b> | 
@@ -258,7 +260,6 @@ with t5:
             """
             st.markdown(html_info, unsafe_allow_html=True)
             
-            # עיצוב תאריך מסודר
             try:
                 clean_date = pd.to_datetime(row['timestamp']).strftime('%d/%m/%Y %H:%M')
             except:
@@ -276,7 +277,6 @@ with t5:
                 decoded = base64.b64decode(row['image_data'])
                 st.image(decoded, use_container_width=True)
             
-            # תיקון ה-Note: מנקה "Category:" ישנים ומציג שדה ריק
             current_note = row['notes']
             if current_note and current_note.startswith("Category:"):
                 current_note = ""

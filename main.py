@@ -45,7 +45,7 @@ st.markdown("""
         color: white; 
         margin-bottom: 10px; 
         font-weight: 700; 
-        font-size: 1.2rem !important; /* Smaller Title */
+        font-size: 1.8rem !important; /* Smaller Title */
         letter-spacing: -0.5px;
     }
 
@@ -176,7 +176,7 @@ st.divider()
 # REUSABLE TAB BUILDER
 # ==========================================
 def render_setup_tab(category_name, state_key):
-    atr_multiplier = st.number_input("Risk Multiplier (ATR)", 0.5, 5.0, 2.0, 0.5, key=f"atr_{category_name}")
+    atr_multiplier = st.number_input("Risk Multiplier (ATR)", 0.5, 5.0, 1.5, 0.5, key=f"atr_{category_name}")
     img_dir = os.path.join("data", f"discord_{category_name}")
     if os.path.exists(img_dir):
         files = sorted([f for f in os.listdir(img_dir) if f.endswith('.png')], key=lambda x: os.path.getmtime(os.path.join(img_dir, x)), reverse=True)

@@ -206,10 +206,18 @@ def render_setup_tab(category_name, state_key):
                 p = techs['price']
                 sl = p - (techs['ATR'] * atr_multiplier)
                 risk = ((p - sl) / p) * 100
+                
+                # --- VISUAL INDICATORS LOGIC ---
+                rsi_val = techs['RSI']
+                rsi_icon = "🟢" if rsi_val < 30 else "🔴" if rsi_val > 70 else "⚪"
+                
+                vol_val = techs['VolRatio']
+                vol_icon = "🔥" if vol_val > 1.5 else "🧊" if vol_val < 0.8 else "📊"
+                
                 st.markdown(f"""
                 <div class="tech-box">
                     <b>{user_ticker} | ${p:.2f}</b><br>
-                    RSI: {techs['RSI']:.0f} | Vol: {techs['VolRatio']:.1f}x<br>
+                    {rsi_icon} RSI: {rsi_val:.0f} | {vol_icon} Vol: {vol_val:.1f}x<br>
                     <span style="color:#EF4444; font-weight:bold;">Suggested SL: ${sl:.2f} (-{risk:.1f}%)</span>
                 </div>
                 """, unsafe_allow_html=True)

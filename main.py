@@ -45,7 +45,7 @@ st.markdown("""
         color: white; 
         margin-bottom: 10px; 
         font-weight: 700; 
-        font-size: 1.8rem !important; /* Smaller Title */
+        font-size: 1.8rem !important; 
         letter-spacing: -0.5px;
     }
 
@@ -53,15 +53,15 @@ st.markdown("""
     [data-testid="metric-container"] {
         background-color: #121722;
         border: 1px solid #1F2636;
-        padding: 5px 10px !important; /* Minimized padding */
+        padding: 5px 10px !important; 
         border-radius: 8px;
     }
     div[data-testid="stMetricValue"] { 
-        font-size: 0.9rem !important; /* Smaller numbers */
+        font-size: 0.9rem !important; 
         color: #10B981; 
     }
     div[data-testid="stMetricLabel"] {
-        font-size: 0.7rem !important; /* Smaller labels */
+        font-size: 0.7rem !important; 
     }
     
     /* Setup Cards */
@@ -215,7 +215,7 @@ def render_setup_tab(category_name, state_key):
                 stop = c2.number_input("Stop", value=float(sl), key=f"s_{f}")
                 
                 if st.button("📝 Log Trade", use_container_width=True, type="primary", key=f"l_{f}"):
-                    # הפיכת ה-Notes לריק כברירת מחדל
+                    # Logging with empty string for new entries
                     db.log_trade(user_ticker, ent, stop, "", full_path)
                     st.success("Logged!")
             else:
@@ -248,8 +248,15 @@ with t5:
             st.markdown(f'<div class="journal-row">', unsafe_allow_html=True)
             risk = ((row['entry'] - row['atr_sl']) / row['entry']) * 100 if row['entry'] > 0 else 0
             
-            # עיצוב מחדש של שורת הנתונים למניעת בריחת טקסט
-            st.markdown(f"**{row['ticker']}** | Ent: **${row['entry']:.2f}** | SL: <span style='color:#EF4444; font-weight:bold;'>${row['atr_sl']:.2f} (-{risk:.1f}%)</span>", unsafe_allow_html=True)
+            # תיקון תצוגת נתונים ב-HTML נקי למניעת שבירת קוד ויזואלית
+            html_info = f"""
+            <div style='font-size: 1rem; margin-bottom: 5px;'>
+                <b style='color:#3B82F6;'>{row['ticker']}</b> | 
+                Ent: <b>${row['entry']:.2f}</b> | 
+                SL: <span style='color:#EF4444; font-weight:bold;'>${row['atr_sl']:.2f} (-{risk:.1f}%)</span>
+            </div>
+            """
+            st.markdown(html_info, unsafe_allow_html=True)
             
             # עיצוב תאריך מסודר
             try:
@@ -268,6 +275,11 @@ with t5:
             if show_img and row.get('image_data'):
                 decoded = base64.b64decode(row['image_data'])
                 st.image(decoded, use_container_width=True)
+            
+            # תיקון ה-Note: מנקה "Category:" ישנים ומציג שדה ריק
+            current_note = row['notes']
+            if current_note and current_note.startswith("Category:"):
+                current_note = ""
                 
-            st.text_input("Notes:", value=row['notes'], key=f"n_{row['id']}", placeholder="Add your notes here...", on_change=lambda r=row['id']: db.update_notes(r, st.session_state[f"n_{r}"]))
+            st.text_input("Notes:", value=current_note, key=f"n_{row['id']}", placeholder="Add your notes here...", on_change=lambda r=row['id']: db.update_notes(r, st.session_state[f"n_{r}"]))
             st.markdown('</div>', unsafe_allow_html=True)

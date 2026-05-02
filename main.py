@@ -355,15 +355,19 @@ def render_setup_tab(category_name, state_key):
                 st.rerun()
 
 # ==========================================
-# TABS (Shortened for Mobile)
+# MAIN TABS (Modified as requested)
 # ==========================================
-t1, t2, t3, t4, t5 = st.tabs(["🚀 Break", "📈 Trend", "📉 Fib", "📅 Earn", "📓 Log"])
+main_tab1, main_tab2, main_tab3 = st.tabs(["📊 Scanners", "📅 Earn", "📓 Log"])
 
-with t1: render_setup_tab("breakouts", "visible_count_breakouts")
-with t2: render_setup_tab("trendlines", "visible_count_trendlines")
-with t3: render_setup_tab("fibonacci", "visible_count_fibonacci")
+with main_tab1:
+    # Nested Sub-Tabs for Categories
+    t1, t2, t3 = st.tabs(["🚀 Break", "📈 Trend", "📉 Fib"])
+    
+    with t1: render_setup_tab("breakouts", "visible_count_breakouts")
+    with t2: render_setup_tab("trendlines", "visible_count_trendlines")
+    with t3: render_setup_tab("fibonacci", "visible_count_fibonacci")
 
-with t4:
+with main_tab2:
     df = get_upcoming_earnings()
     if not df.empty:
         def style_days(val):
@@ -383,7 +387,7 @@ with t4:
     else:
         st.info("No earnings reports found for major tickers.")
 
-with t5:
+with main_tab3:
     # --- MANUAL ADD SECTION ---
     with st.expander("➕ Add Manual Trade"):
         man_ticker = st.text_input("Enter Ticker Symbol:", key="man_ticker", placeholder="e.g. AAPL, TSLA...").upper().strip()

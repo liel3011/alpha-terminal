@@ -279,7 +279,6 @@ with t1: render_setup_tab("breakouts", "visible_count_breakouts")
 with t2: render_setup_tab("trendlines", "visible_count_trendlines")
 with t3: render_setup_tab("fibonacci", "visible_count_fibonacci")
 with t4:
-    st.markdown("<h3 style='color: white;'>📅 Upcoming Earnings Scanner</h3>", unsafe_allow_html=True)
     df = get_upcoming_earnings()
     if not df.empty:
         # פונקציית עיצוב חכמה לטבלה

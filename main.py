@@ -8,8 +8,8 @@ from datetime import datetime
 import base64
 import shutil
 from dotenv import load_dotenv
-
 from core.database import DatabaseManager
+
 try:
     from integrations.discord_listener import DiscordListener
 except ImportError as e:
@@ -249,7 +249,6 @@ def get_upcoming_earnings():
                     next_date = min(future_dates)
                     days_left = (next_date - datetime.now().date()).days
                     results.append({"Ticker": t, "Report Date": next_date.strftime('%Y-%m-%d'), "Days Left": days_left})
-            
             elif isinstance(cal, dict) and 'Earnings Date' in cal:
                 dates = cal['Earnings Date']
                 if not isinstance(dates, list): dates = [dates]
@@ -279,7 +278,6 @@ if st.button("Sync Channels", use_container_width=True, type="primary"):
             if os.path.exists(folder):
                 shutil.rmtree(folder)
             os.makedirs(folder, exist_ok=True)
-            
         DiscordListener(os.getenv("DISCORD_TOKEN")).fetch_new_images()
         st.rerun()
 
@@ -292,11 +290,9 @@ def render_setup_tab(category_name, state_key):
         files = sorted([f for f in os.listdir(img_dir) if f.endswith('.png')], 
                        key=lambda x: int(''.join(filter(str.isdigit, x.split('_')[-1]))) if '_' in x else 0, 
                        reverse=True)
-        
         seen = set()
         unique_setups = []
         placeholders = ["SETUP", "IMAGE", "IMG", "UNKNOWN", "EMBED"]
-        
         for f in files:
             ticker = f.split('_')[0].upper()
             if ticker in placeholders or ticker not in seen:
@@ -306,7 +302,6 @@ def render_setup_tab(category_name, state_key):
         for f, original_ticker in unique_setups[:st.session_state[state_key]]:
             full_path = os.path.join(img_dir, f)
             st.markdown(f'<div class="setup-card">', unsafe_allow_html=True)
-            
             user_ticker = st.text_input("", value="" if original_ticker in placeholders else original_ticker, key=f"t_{f}", label_visibility="collapsed", placeholder="Enter Ticker...").upper().strip()
             
             try:
@@ -323,19 +318,15 @@ def render_setup_tab(category_name, state_key):
                 setup_time = datetime.fromtimestamp(os.path.getmtime(full_path)).strftime('%d/%m/%Y %H:%M')
             
             st.markdown(f"<div style='color: #64748B; font-size: 0.8rem; margin-bottom: 10px;'>🕒 Identified: {setup_time}</div>", unsafe_allow_html=True)
-            
             st.image(full_path, use_container_width=True)
-            
             techs = get_technical_data(user_ticker) if user_ticker else None
 
             if techs:
                 p = techs['price']
                 sl = p - (techs['ATR'] * atr_multiplier)
                 risk = ((p - sl) / p) * 100
-                
                 rsi_val = techs['RSI']
                 rsi_icon = "🟢" if rsi_val < 30 else "🔴" if rsi_val > 70 else "⚪"
-                
                 vol_val = techs['VolRatio']
                 vol_icon = "🔥" if vol_val > 1.5 else "🧊" if vol_val < 0.8 else "📊"
                 
@@ -380,7 +371,6 @@ main_tab1, main_tab2, main_tab3 = st.tabs(["📊 Scanners", "📅 Earn", "📓 L
 
 with main_tab1:
     t1, t2, t3 = st.tabs(["🚀 Break", "📈 Trend", "📉 Fib"])
-    
     with t1: render_setup_tab("breakouts", "visible_count_breakouts")
     with t2: render_setup_tab("trendlines", "visible_count_trendlines")
     with t3: render_setup_tab("fibonacci", "visible_count_fibonacci")
@@ -393,15 +383,9 @@ with main_tab2:
             elif val <= 7: color = '#F59E0B' 
             else: color = '#10B981' 
             return f'color: {color}; font-weight: 700;'
-
         df_display = df.copy()
         df_display.columns = ["Ticker", "📅 Report Date", "⏳ Days Left"]
-        
-        st.dataframe(
-            df_display.style.map(style_days, subset=['⏳ Days Left']),
-            use_container_width=True,
-            hide_index=True
-        )
+        st.dataframe(df_display.style.map(style_days, subset=['⏳ Days Left']), use_container_width=True, hide_index=True)
     else:
         st.info("No earnings reports found.")
 
@@ -415,9 +399,13 @@ with main_tab3:
                 
                 mc1, mc2 = st.columns([1, 1])
                 man_ent = mc1.number_input("Entry Price", value=float(man_p), key="man_e")
-                sl_type = mc2.radio("Stop Loss Type", ["Percentage (%)", "Price ($)"], horizontal=True, key="sl_type")
+                sl_type = mc2.radio("Stop Loss Type", ["ATR Multiplier", "Percentage (%)", "Price ($)"], horizontal=True, key="sl_type")
                 
-                if sl_type == "Percentage (%)":
+                if sl_type == "ATR Multiplier":
+                    man_sl_atr = st.number_input("ATR Multiplier", min_value=0.5, max_value=5.0, value=1.5, step=0.5, key="man_sl_atr")
+                    man_stop = man_p - (man_techs['ATR'] * man_sl_atr)
+                    st.caption(f"Calculated SL Price: ${man_stop:.2f}")
+                elif sl_type == "Percentage (%)":
                     man_sl_pct = st.number_input("Stop Loss (%)", min_value=0.1, max_value=99.0, value=5.0, step=0.5, key="man_sl_pct")
                     man_stop = man_ent * (1 - (man_sl_pct / 100))
                     st.caption(f"Calculated SL Price: ${man_stop:.2f}")
@@ -516,7 +504,7 @@ with main_tab3:
             with c1: show_img = st.toggle("🔍 View Chart", key=f"show_{row['id']}")
             with c2: edit_mode = st.toggle("✏️ Edit", key=f"edit_mode_{row['id']}")
             with c3:
-                if st.button("🗑️", key=f"del_{row['id']}", use_container_width=True):
+                if st.button("🗑️ Delete", key=f"del_{row['id']}", use_container_width=True):
                     db.delete_trade(row['id'])
                     st.rerun()
             

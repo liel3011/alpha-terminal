@@ -16,7 +16,7 @@ except ImportError as e:
 
 # --- INITIALIZATION ---
 load_dotenv()
-st.set_page_config(page_title="Aglo Trader Terminal", layout="wide", page_icon="⚡", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Alpha Terminal", layout="wide", page_icon="⚡", initial_sidebar_state="collapsed")
 db = DatabaseManager()
 
 # --- HIGH-END PROFESSIONAL CSS (MOBILE OPTIMIZED) ---
@@ -123,7 +123,7 @@ def get_upcoming_earnings():
     return pd.DataFrame(res).sort_values(by="Days") if res else pd.DataFrame()
 
 # --- HEADER ---
-st.markdown("<h2 style='color: white;'>⚡ AGLO TRADER TERMINAL</h2>", unsafe_allow_html=True)
+st.markdown("<h2 style='color: white;'>⚡ Aglo Trader Terminal</h2>", unsafe_allow_html=True)
 pulse = get_market_pulse()
 if pulse:
     cols = st.columns(len(pulse))

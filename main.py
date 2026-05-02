@@ -384,6 +384,53 @@ with t4:
         st.info("No earnings reports found for major tickers.")
 
 with t5:
+    # --- MANUAL ADD SECTION ---
+    with st.expander("➕ Add Manual Trade"):
+        man_ticker = st.text_input("Enter Ticker Symbol:", key="man_ticker", placeholder="e.g. AAPL, TSLA...").upper().strip()
+        if man_ticker:
+            man_techs = get_technical_data(man_ticker)
+            if man_techs:
+                man_p = man_techs['price']
+                man_sl = man_p - (man_techs['ATR'] * 1.5)
+                man_risk = ((man_p - man_sl) / man_p) * 100
+                
+                rsi_val = man_techs['RSI']
+                rsi_icon = "🟢" if rsi_val < 30 else "🔴" if rsi_val > 70 else "⚪"
+                
+                vol_val = man_techs['VolRatio']
+                vol_icon = "🔥" if vol_val > 1.5 else "🧊" if vol_val < 0.8 else "📊"
+                
+                st.markdown(f"""
+                <div class="tech-box">
+                    <div class="tech-box-header">
+                        <span>{man_ticker}</span>
+                        <span style="color: #10B981;">${man_p:.2f}</span>
+                    </div>
+                    <div class="tech-box-row">
+                        <span>{rsi_icon} RSI</span>
+                        <span>{rsi_val:.0f}</span>
+                    </div>
+                    <div class="tech-box-row">
+                        <span>{vol_icon} Volume</span>
+                        <span>{vol_val:.1f}x</span>
+                    </div>
+                    <div class="tech-box-row" style="margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px;">
+                        <span>Target Stop Loss</span>
+                        <span class="tech-box-highlight">${man_sl:.2f} (-{man_risk:.1f}%)</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                c1, c2 = st.columns(2)
+                man_ent = c1.number_input("Entry Price", value=float(man_p), key="man_e")
+                man_stop = c2.number_input("Stop Loss", value=float(man_sl), key="man_s")
+                
+                if st.button("📝 Log Manual Trade", use_container_width=True, type="primary", key="man_log_btn"):
+                    db.log_trade(man_ticker, man_ent, man_stop, "", "")
+                    st.rerun()
+            else:
+                st.caption("Waiting for valid ticker symbol to fetch technical data...")
+
     st.subheader("Interactive Trading Log")
     log_data = db.get_journal_data()
     if not log_data.empty:
@@ -410,16 +457,18 @@ with t5:
                 clean_date = row['timestamp']
             st.markdown(f"<div style='color: #64748B; font-size: 0.8rem; margin-bottom: 15px;'>📅 Logged on: {clean_date}</div>", unsafe_allow_html=True)
             
-            c1, c2 = st.columns(2)
+            c1, c2 = st.columns([3, 1])
             with c1: show_img = st.toggle("🔍 View Chart", key=f"show_{row['id']}")
             with c2:
-                if st.button("🗑️ Delete", key=f"del_{row['id']}", use_container_width=True):
+                if st.button("🗑️", key=f"del_{row['id']}", use_container_width=True):
                     db.delete_trade(row['id'])
                     st.rerun()
             
             if show_img and row.get('image_data'):
                 decoded = base64.b64decode(row['image_data'])
                 st.image(decoded, use_container_width=True)
+            elif show_img:
+                st.info("No chart available for manual entry.")
             
             current_note = row['notes']
             if current_note and current_note.startswith("Category:"):

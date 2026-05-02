@@ -5,6 +5,7 @@ import pandas as pd
 import yfinance as yf
 from datetime import datetime
 import base64
+import shutil  # נוסף לצורך מחיקת תיקיות
 from dotenv import load_dotenv
 
 # --- INTERNAL IMPORTS ---
@@ -165,8 +166,17 @@ if pulse_data:
         if t == "^VIX": color = "inverse" if data['change'] >= 0 else "normal"
         cols[i].metric(data['name'], f"${data['price']:.2f}", f"{data['change']:+.2f}%", delta_color=color)
 
+# --- SYNC BUTTON WITH CLEAN WIPE ---
 if st.button("🔄 Sync Channels", use_container_width=True, type="primary"):
-    with st.spinner("Syncing..."):
+    with st.spinner("Cleaning old data and syncing..."):
+        # מחיקת תיקיות הקבצים הקיימות כדי לייבא מחדש
+        for cat in ["breakouts", "trendlines", "fibonacci"]:
+            folder_path = os.path.join("data", f"discord_{cat}")
+            if os.path.exists(folder_path):
+                shutil.rmtree(folder_path) # מוחק הכל
+                os.makedirs(folder_path) # מייצר תיקייה ריקה מחדש
+        
+        # ייבוא חדש מדיסקורד
         DiscordListener(os.getenv("DISCORD_TOKEN")).fetch_new_images()
         st.rerun()
 
@@ -179,7 +189,7 @@ def render_setup_tab(category_name, state_key):
     atr_multiplier = st.number_input("Risk Multiplier (ATR)", 0.5, 5.0, 1.5, 0.5, key=f"atr_{category_name}")
     img_dir = os.path.join("data", f"discord_{category_name}")
     if os.path.exists(img_dir):
-        # --- FIXED SORTING (Newest First) ---
+        # מיון לפי זמן יצירת הקובץ - חדש ביותר למעלה
         files = sorted([f for f in os.listdir(img_dir) if f.endswith('.png')], key=lambda x: os.path.getmtime(os.path.join(img_dir, x)), reverse=True)
         seen = set()
         unique_setups = []
@@ -202,7 +212,7 @@ def render_setup_tab(category_name, state_key):
             # --- TICKER INPUT FIRST ---
             user_ticker = st.text_input("", value="" if original_ticker in placeholders else original_ticker, key=f"t_{f}", label_visibility="collapsed").upper().strip()
             
-            # --- DISPLAY DATE (RESTORED) ---
+            # --- DISPLAY DATE ---
             st.caption(f"🕒 {setup_time}")
             
             # --- IMAGE SECOND ---
@@ -258,14 +268,12 @@ with t4:
     st.markdown("<h3 style='color: white;'>📅 Upcoming Earnings Scanner</h3>", unsafe_allow_html=True)
     df = get_upcoming_earnings()
     if not df.empty:
-        # פונקציית עיצוב חכמה לטבלה
         def style_days(val):
-            if val <= 3: color = '#EF4444' # אדום בוהק
-            elif val <= 7: color = '#F59E0B' # כתום
-            else: color = '#10B981' # ירוק
+            if val <= 3: color = '#EF4444'
+            elif val <= 7: color = '#F59E0B'
+            else: color = '#10B981'
             return f'color: {color}; font-weight: bold;'
 
-        # הכנת הטבלה עם אייקונים וכותרות יפות
         df_display = df.copy()
         df_display.columns = ["Ticker", "📅 Report Date", "⏳ Days Left"]
         

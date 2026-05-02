@@ -9,19 +9,16 @@ import base64
 import shutil
 from dotenv import load_dotenv
 
-# --- INTERNAL IMPORTS ---
 from core.database import DatabaseManager
 try:
     from integrations.discord_listener import DiscordListener
 except ImportError as e:
     st.error(f"Missing internal module: {e}")
 
-# --- INITIALIZATION ---
 load_dotenv()
 st.set_page_config(page_title="Aglo Trader Terminal", layout="wide", page_icon="🪙", initial_sidebar_state="collapsed")
 db = DatabaseManager()
 
-# --- DB HELPER FOR EDITING TRADES ---
 def update_trade_entry_sl(trade_id, new_entry, new_sl):
     try:
         conn = sqlite3.connect('data/journal.db')
@@ -32,30 +29,25 @@ def update_trade_entry_sl(trade_id, new_entry, new_sl):
     except Exception as e:
         st.error(f"Database error: {e}")
 
-# --- HIGH-END PROFESSIONAL CSS ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     
-    /* Base Theme */
     .stApp { 
         background-color: #07090E; 
         color: #F1F5F9; 
         font-family: 'Inter', sans-serif;
     }
     
-    /* Layout Adjustments */
     .block-container {
         padding-top: 2rem !important;
         padding-bottom: 2rem !important;
         max-width: 1400px;
     }
     
-    /* Hide Streamlit Clutter */
     header[data-testid="stHeader"], footer { display: none !important; }
     [data-testid="stAppViewBlocker"], div[data-testid="stLoading"] { display: none !important; }
     
-    /* Main Title */
     .main-title {
         color: #FFFFFF; 
         margin-bottom: 20px; 
@@ -68,7 +60,6 @@ st.markdown("""
     }
     .main-title span { color: #3B82F6; font-size: 1.2rem; font-weight: 600; background: rgba(59,130,246,0.1); padding: 4px 10px; border-radius: 8px; }
 
-    /* Market Metrics */
     [data-testid="metric-container"] {
         background: linear-gradient(145deg, #131C2D, #0B101A);
         border: 1px solid #1E293B;
@@ -79,7 +70,6 @@ st.markdown("""
     div[data-testid="stMetricValue"] { font-size: 1.2rem !important; font-weight: 700; color: #10B981; }
     div[data-testid="stMetricLabel"] { font-size: 0.8rem !important; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; }
     
-    /* Customizing Main Tabs (No Scrolling) */
     .stTabs [data-baseweb="tab-list"] {
         gap: 6px;
         background-color: transparent;
@@ -101,7 +91,6 @@ st.markdown("""
         border-color: #3B82F6 !important;
     }
     
-    /* Customizing Sub-Tabs (Smaller nested tabs) */
     .stTabs .stTabs [data-baseweb="tab-list"] {
         gap: 4px;
     }
@@ -116,7 +105,6 @@ st.markdown("""
         background-color: #2563EB !important;
     }
     
-    /* Modern Setup Cards */
     .setup-card { 
         background-color: #131C2D; 
         padding: 24px; 
@@ -132,7 +120,6 @@ st.markdown("""
         border-color: #334155;
     }
     
-    /* Tech Box Dashboard Style */
     .tech-box { 
         background: rgba(15, 23, 42, 0.6);
         padding: 16px; 
@@ -148,7 +135,6 @@ st.markdown("""
     .tech-box-row { display: flex; justify-content: space-between; font-size: 0.9rem; color: #CBD5E1; }
     .tech-box-highlight { color: #EF4444; font-weight: 700; font-size: 1rem; }
     
-    /* Log Rows */
     .journal-row { 
         background-color: #131C2D; 
         padding: 20px; 
@@ -159,7 +145,6 @@ st.markdown("""
     }
     .journal-row:hover { background-color: #1A263D; border-color: #334155; }
     
-    /* Buttons Enhancements */
     .stButton > button {
         border-radius: 10px !important;
         font-weight: 600 !important;
@@ -175,10 +160,8 @@ st.markdown("""
         transform: translateY(-1px);
     }
     
-    /* Images */
     .stImage img { border-radius: 10px; border: 1px solid #1E293B; }
 
-    /* Inputs */
     .stTextInput>div>div>input, .stNumberInput>div>div>input {
         background-color: #0F172A !important;
         border-radius: 8px !important;
@@ -191,7 +174,6 @@ st.markdown("""
         .stImage { width: 100% !important; }
         .main-title { font-size: 1.6rem !important; }
         
-        /* Mobile Tab Wrapping Fix */
         .stTabs [data-baseweb="tab-list"] {
             display: flex;
             flex-wrap: wrap;
@@ -204,7 +186,6 @@ st.markdown("""
             text-align: center;
             height: 38px;
         }
-        /* Sub-Tabs mobile adjustment */
         .stTabs .stTabs [data-baseweb="tab"] {
             height: 30px;
             font-size: 0.7rem;
@@ -214,12 +195,10 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- STATE ---
 if 'visible_count_breakouts' not in st.session_state: st.session_state.visible_count_breakouts = 3
 if 'visible_count_trendlines' not in st.session_state: st.session_state.visible_count_trendlines = 3
 if 'visible_count_fibonacci' not in st.session_state: st.session_state.visible_count_fibonacci = 3
 
-# --- FINANCIAL HELPERS ---
 @st.cache_data(ttl=60)
 def get_market_pulse():
     pulse = {}
@@ -258,7 +237,6 @@ def get_upcoming_earnings():
     for t in major_tickers:
         try:
             cal = yf.Ticker(t).calendar
-            # Handle new yfinance version (returns DataFrame)
             if isinstance(cal, pd.DataFrame) and not cal.empty:
                 if 'Earnings Date' in cal.columns:
                     dates = pd.to_datetime(cal['Earnings Date']).dt.date.tolist()
@@ -272,7 +250,6 @@ def get_upcoming_earnings():
                     days_left = (next_date - datetime.now().date()).days
                     results.append({"Ticker": t, "Report Date": next_date.strftime('%Y-%m-%d'), "Days Left": days_left})
             
-            # Handle old yfinance version (returns dict)
             elif isinstance(cal, dict) and 'Earnings Date' in cal:
                 dates = cal['Earnings Date']
                 if not isinstance(dates, list): dates = [dates]
@@ -284,9 +261,6 @@ def get_upcoming_earnings():
         except: pass
     return pd.DataFrame(results).sort_values(by="Days Left") if results else pd.DataFrame()
 
-# ==========================================
-# HEADER
-# ==========================================
 st.markdown("<div class='main-title'>🪙 Aglo Trader <span>Terminal</span></div>", unsafe_allow_html=True)
 
 pulse_data = get_market_pulse()
@@ -297,10 +271,9 @@ if pulse_data:
         if t == "^VIX": color = "inverse" if data['change'] >= 0 else "normal"
         cols[i].metric(data['name'], f"${data['price']:.2f}", f"{data['change']:+.2f}%", delta_color=color)
 
-# --- SYNC BUTTON ---
-st.write("") # Tiny spacer
+st.write("") 
 if st.button("Sync Channels", use_container_width=True, type="primary"):
-    with st.spinner("Fetching latest setups and cleaning old data..."):
+    with st.spinner("Fetching..."):
         for cat in ["breakouts", "trendlines", "fibonacci"]:
             folder = os.path.join("data", f"discord_{cat}")
             if os.path.exists(folder):
@@ -312,9 +285,6 @@ if st.button("Sync Channels", use_container_width=True, type="primary"):
 
 st.divider()
 
-# ==========================================
-# REUSABLE TAB BUILDER
-# ==========================================
 def render_setup_tab(category_name, state_key):
     atr_multiplier = st.number_input("Risk Multiplier (ATR)", 0.5, 5.0, 1.5, 0.5, key=f"atr_{category_name}")
     img_dir = os.path.join("data", f"discord_{category_name}")
@@ -398,7 +368,7 @@ def render_setup_tab(category_name, state_key):
                     db.log_trade(user_ticker, ent, stop, "", full_path)
                     st.success("Successfully Logged!")
             else:
-                st.caption("Waiting for valid ticker symbol to fetch technical data...")
+                st.caption("Waiting for valid ticker symbol...")
             st.markdown('</div>', unsafe_allow_html=True)
 
         if len(unique_setups) > st.session_state[state_key]:
@@ -406,13 +376,9 @@ def render_setup_tab(category_name, state_key):
                 st.session_state[state_key] += 3
                 st.rerun()
 
-# ==========================================
-# MAIN TABS
-# ==========================================
 main_tab1, main_tab2, main_tab3 = st.tabs(["📊 Scanners", "📅 Earn", "📓 Log"])
 
 with main_tab1:
-    # Nested Sub-Tabs for Categories
     t1, t2, t3 = st.tabs(["🚀 Break", "📈 Trend", "📉 Fib"])
     
     with t1: render_setup_tab("breakouts", "visible_count_breakouts")
@@ -422,7 +388,6 @@ with main_tab1:
 with main_tab2:
     df = get_upcoming_earnings()
     if not df.empty:
-        # Style function mapping integer days to colors
         def style_days(val):
             if val <= 3: color = '#EF4444' 
             elif val <= 7: color = '#F59E0B' 
@@ -438,25 +403,27 @@ with main_tab2:
             hide_index=True
         )
     else:
-        st.info("No earnings reports found for major tickers.")
+        st.info("No earnings reports found.")
 
 with main_tab3:
-    # --- MANUAL ADD SECTION ---
     with st.expander("➕ Add Manual Trade"):
-        man_ticker = st.text_input("Enter Ticker Symbol:", key="man_ticker", placeholder="e.g. AAPL, TSLA...").upper().strip()
+        man_ticker = st.text_input("Enter Ticker Symbol:", key="man_ticker", placeholder="e.g. AAPL...").upper().strip()
         if man_ticker:
             man_techs = get_technical_data(man_ticker)
             if man_techs:
                 man_p = man_techs['price']
                 
-                # Dynamic inputs
-                mc1, mc2, mc3 = st.columns(3)
+                mc1, mc2 = st.columns([1, 1])
                 man_ent = mc1.number_input("Entry Price", value=float(man_p), key="man_e")
-                man_sl_pct = mc2.number_input("Stop Loss (%)", min_value=0.1, max_value=99.0, value=5.0, step=0.5, key="man_sl_pct")
+                sl_type = mc2.radio("Stop Loss Type", ["Percentage (%)", "Price ($)"], horizontal=True, key="sl_type")
                 
-                # Calculate SL dollar value dynamically based on percentage
-                calculated_sl = man_ent * (1 - (man_sl_pct / 100))
-                man_stop = mc3.number_input("Stop Loss ($)", value=float(calculated_sl), key="man_s")
+                if sl_type == "Percentage (%)":
+                    man_sl_pct = st.number_input("Stop Loss (%)", min_value=0.1, max_value=99.0, value=5.0, step=0.5, key="man_sl_pct")
+                    man_stop = man_ent * (1 - (man_sl_pct / 100))
+                    st.caption(f"Calculated SL Price: ${man_stop:.2f}")
+                else:
+                    default_sl = man_ent * 0.95
+                    man_stop = st.number_input("Stop Loss ($)", value=float(default_sl), key="man_s")
                 
                 rsi_val = man_techs['RSI']
                 rsi_icon = "🟢" if rsi_val < 30 else "🔴" if rsi_val > 70 else "⚪"
@@ -484,13 +451,12 @@ with main_tab3:
                     db.log_trade(man_ticker, man_ent, man_stop, "", "")
                     st.rerun()
             else:
-                st.caption("Waiting for valid ticker symbol to fetch technical data...")
+                st.caption("Waiting for valid ticker symbol...")
 
     st.subheader("Interactive Trading Log")
     log_data = db.get_journal_data()
     
     if not log_data.empty:
-        # --- ALERTS SYSTEM ---
         sl_alerts = []
         profit_alerts = []
         
@@ -508,12 +474,10 @@ with main_tab3:
             for alert in profit_alerts: st.success(f"📈 {alert}")
             st.write("") 
         
-        # --- LOG RENDER LOOP ---
         for _, row in log_data.iterrows():
             st.markdown(f'<div class="journal-row">', unsafe_allow_html=True)
             risk = ((row['entry'] - row['atr_sl']) / row['entry']) * 100 if row['entry'] > 0 else 0
             
-            # --- LIVE STATUS & PROFIT BADGE PER ROW ---
             live_techs = get_technical_data(row['ticker'])
             status_html = ""
             if live_techs:
@@ -548,21 +512,19 @@ with main_tab3:
                 clean_date = row['timestamp']
             st.markdown(f"<div style='color: #64748B; font-size: 0.8rem; margin-bottom: 15px;'>📅 Logged on: {clean_date}</div>", unsafe_allow_html=True)
             
-            # Add Edit functionality
             c1, c2, c3 = st.columns([3, 1, 1])
             with c1: show_img = st.toggle("🔍 View Chart", key=f"show_{row['id']}")
-            with c2: edit_mode = st.toggle("✏️", key=f"edit_mode_{row['id']}")
+            with c2: edit_mode = st.toggle("✏️ Edit", key=f"edit_mode_{row['id']}")
             with c3:
                 if st.button("🗑️", key=f"del_{row['id']}", use_container_width=True):
                     db.delete_trade(row['id'])
                     st.rerun()
             
-            # Edit fields drop-down
             if edit_mode:
                 ec1, ec2, ec3 = st.columns(3)
                 new_ent = ec1.number_input("Edit Entry", value=float(row['entry']), key=f"ed_e_{row['id']}")
                 new_sl = ec2.number_input("Edit SL", value=float(row['atr_sl']), key=f"ed_s_{row['id']}")
-                if ec3.button("💾 Save Update", key=f"save_{row['id']}", use_container_width=True):
+                if ec3.button("💾 Save", key=f"save_{row['id']}", use_container_width=True):
                     update_trade_entry_sl(row['id'], new_ent, new_sl)
                     st.rerun()
             
@@ -570,11 +532,11 @@ with main_tab3:
                 decoded = base64.b64decode(row['image_data'])
                 st.image(decoded, use_container_width=True)
             elif show_img:
-                st.info("No chart available for manual entry.")
+                st.info("No chart available.")
             
             current_note = row['notes']
             if current_note and current_note.startswith("Category:"):
                 current_note = ""
                 
-            st.text_input("Notes:", value=current_note, key=f"n_{row['id']}", placeholder="Add your reflections or exit notes...", on_change=lambda r=row['id']: db.update_notes(r, st.session_state[f"n_{r}"]))
+            st.text_input("Notes:", value=current_note, key=f"n_{row['id']}", placeholder="Add notes...", on_change=lambda r=row['id']: db.update_notes(r, st.session_state[f"n_{r}"]))
             st.markdown('</div>', unsafe_allow_html=True)

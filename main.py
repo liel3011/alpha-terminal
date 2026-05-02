@@ -168,7 +168,7 @@ if pulse_data:
 
 # --- SYNC BUTTON WITH FULL DATA WIPE ---
 if st.button("🔄 Sync Channels", use_container_width=True, type="primary"):
-    with st.spinner("Wiping old data and fetching latest setups..."):
+    with st.spinner("fetching..."):
         # Deleting old folders to ensure fresh import
         for cat in ["breakouts", "trendlines", "fibonacci"]:
             folder = os.path.join("data", f"discord_{cat}")

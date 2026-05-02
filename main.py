@@ -188,7 +188,7 @@ def render_setup_tab(category_name, state_key):
     atr_multiplier = st.number_input("Risk Multiplier (ATR)", 0.5, 5.0, 1.5, 0.5, key=f"atr_{category_name}")
     img_dir = os.path.join("data", f"discord_{category_name}")
     if os.path.exists(img_dir):
-        # --- FIXED SORTING (Uses numeric timestamp from filename instead of file modification time) ---
+        # --- FIXED SORTING ---
         files = sorted([f for f in os.listdir(img_dir) if f.endswith('.png')], 
                        key=lambda x: int(''.join(filter(str.isdigit, x.split('_')[-1]))) if '_' in x else 0, 
                        reverse=True)
@@ -210,12 +210,17 @@ def render_setup_tab(category_name, state_key):
             # --- TICKER INPUT FIRST ---
             user_ticker = st.text_input("", value="" if original_ticker in placeholders else original_ticker, key=f"t_{f}", label_visibility="collapsed").upper().strip()
             
-            # --- ORIGINAL DISCORD DATE EXTRACTION ---
+            # --- FIXED ORIGINAL DISCORD DATE EXTRACTION ---
             try:
-                # Extracts timestamp from filename suffix (e.g., AAPL_1714611995.png)
-                ts_val = int(''.join(filter(str.isdigit, f.split('_')[-1])))
-                # If it's a valid Unix timestamp (10 digits)
-                if 1000000000 < ts_val < 2500000000:
+                raw_id = ''.join(filter(str.isdigit, f.split('_')[-1]))
+                ts_val = int(raw_id)
+                # If it's a Discord Snowflake (Large integer, usually 18-19 digits)
+                if ts_val > 10**17:
+                    # Discord Snowflake formula: (snowflake >> 22) + 1420070400000
+                    unix_ts = ((ts_val >> 22) + 1420070400000) / 1000
+                    setup_time = datetime.fromtimestamp(unix_ts).strftime('%d/%m/%Y %H:%M')
+                # If it's a Unix timestamp (10 digits)
+                elif 1000000000 < ts_val < 2500000000:
                     setup_time = datetime.fromtimestamp(ts_val).strftime('%d/%m/%Y %H:%M')
                 else:
                     setup_time = datetime.fromtimestamp(os.path.getmtime(full_path)).strftime('%d/%m/%Y %H:%M')

@@ -67,7 +67,7 @@ st.markdown("""
     div[data-testid="stMetricValue"] { font-size: 1.2rem !important; font-weight: 700; color: #10B981; }
     div[data-testid="stMetricLabel"] { font-size: 0.8rem !important; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; }
     
-    /* Customizing Streamlit Tabs (No Scrolling) */
+    /* Customizing Main Tabs (No Scrolling) */
     .stTabs [data-baseweb="tab-list"] {
         gap: 6px;
         background-color: transparent;
@@ -87,6 +87,21 @@ st.markdown("""
         color: white !important;
         font-weight: 600;
         border-color: #3B82F6 !important;
+    }
+    
+    /* Customizing Sub-Tabs (Smaller nested tabs) */
+    .stTabs .stTabs [data-baseweb="tab-list"] {
+        gap: 4px;
+    }
+    .stTabs .stTabs [data-baseweb="tab"] {
+        height: 32px;
+        padding: 0 12px;
+        font-size: 0.85rem;
+        background-color: #0F172A;
+        border-radius: 6px 6px 0 0;
+    }
+    .stTabs .stTabs [aria-selected="true"] {
+        background-color: #2563EB !important;
     }
     
     /* Modern Setup Cards */
@@ -164,7 +179,7 @@ st.markdown("""
         .stImage { width: 100% !important; }
         .main-title { font-size: 1.6rem !important; }
         
-        /* THIS IS THE FIX: Allow tabs to shrink and wrap so they fit on mobile without scrolling */
+        /* Mobile Tab Wrapping Fix */
         .stTabs [data-baseweb="tab-list"] {
             display: flex;
             flex-wrap: wrap;
@@ -176,6 +191,12 @@ st.markdown("""
             flex: 1 1 auto;
             text-align: center;
             height: 38px;
+        }
+        /* Sub-Tabs mobile adjustment */
+        .stTabs .stTabs [data-baseweb="tab"] {
+            height: 30px;
+            font-size: 0.7rem;
+            padding: 0 6px;
         }
     }
 </style>
@@ -225,10 +246,29 @@ def get_upcoming_earnings():
     for t in major_tickers:
         try:
             cal = yf.Ticker(t).calendar
-            if isinstance(cal, dict) and 'Earnings Date' in cal:
-                next_date = min([pd.to_datetime(d).date() for d in cal['Earnings Date'] if pd.to_datetime(d).date() >= datetime.now().date()])
-                days_left = (next_date - datetime.now().date()).days
-                results.append({"Ticker": t, "Report Date": next_date.strftime('%Y-%m-%d'), "Days Left": days_left})
+            # Handle new yfinance version (returns DataFrame)
+            if isinstance(cal, pd.DataFrame) and not cal.empty:
+                if 'Earnings Date' in cal.columns:
+                    dates = pd.to_datetime(cal['Earnings Date']).dt.date.tolist()
+                elif isinstance(cal.index, pd.DatetimeIndex):
+                    dates = cal.index.date.tolist()
+                else:
+                    dates = []
+                future_dates = [d for d in dates if d >= datetime.now().date()]
+                if future_dates:
+                    next_date = min(future_dates)
+                    days_left = (next_date - datetime.now().date()).days
+                    results.append({"Ticker": t, "Report Date": next_date.strftime('%Y-%m-%d'), "Days Left": days_left})
+            
+            # Handle old yfinance version (returns dict)
+            elif isinstance(cal, dict) and 'Earnings Date' in cal:
+                dates = cal['Earnings Date']
+                if not isinstance(dates, list): dates = [dates]
+                future_dates = [pd.to_datetime(d).date() for d in dates if pd.to_datetime(d).date() >= datetime.now().date()]
+                if future_dates:
+                    next_date = min(future_dates)
+                    days_left = (next_date - datetime.now().date()).days
+                    results.append({"Ticker": t, "Report Date": next_date.strftime('%Y-%m-%d'), "Days Left": days_left})
         except: pass
     return pd.DataFrame(results).sort_values(by="Days Left") if results else pd.DataFrame()
 
@@ -355,7 +395,7 @@ def render_setup_tab(category_name, state_key):
                 st.rerun()
 
 # ==========================================
-# MAIN TABS (Modified as requested)
+# MAIN TABS 
 # ==========================================
 main_tab1, main_tab2, main_tab3 = st.tabs(["📊 Scanners", "📅 Earn", "📓 Log"])
 
@@ -370,6 +410,7 @@ with main_tab1:
 with main_tab2:
     df = get_upcoming_earnings()
     if not df.empty:
+        # Style function mapping integer days to colors
         def style_days(val):
             if val <= 3: color = '#EF4444' 
             elif val <= 7: color = '#F59E0B' 

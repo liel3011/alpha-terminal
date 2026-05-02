@@ -8,8 +8,8 @@ from datetime import datetime
 import base64
 import shutil
 from dotenv import load_dotenv
-from core.database import DatabaseManager
 
+from core.database import DatabaseManager
 try:
     from integrations.discord_listener import DiscordListener
 except ImportError as e:
@@ -249,6 +249,7 @@ def get_upcoming_earnings():
                     next_date = min(future_dates)
                     days_left = (next_date - datetime.now().date()).days
                     results.append({"Ticker": t, "Report Date": next_date.strftime('%Y-%m-%d'), "Days Left": days_left})
+            
             elif isinstance(cal, dict) and 'Earnings Date' in cal:
                 dates = cal['Earnings Date']
                 if not isinstance(dates, list): dates = [dates]
@@ -278,6 +279,7 @@ if st.button("Sync Channels", use_container_width=True, type="primary"):
             if os.path.exists(folder):
                 shutil.rmtree(folder)
             os.makedirs(folder, exist_ok=True)
+            
         DiscordListener(os.getenv("DISCORD_TOKEN")).fetch_new_images()
         st.rerun()
 
@@ -290,9 +292,11 @@ def render_setup_tab(category_name, state_key):
         files = sorted([f for f in os.listdir(img_dir) if f.endswith('.png')], 
                        key=lambda x: int(''.join(filter(str.isdigit, x.split('_')[-1]))) if '_' in x else 0, 
                        reverse=True)
+        
         seen = set()
         unique_setups = []
         placeholders = ["SETUP", "IMAGE", "IMG", "UNKNOWN", "EMBED"]
+        
         for f in files:
             ticker = f.split('_')[0].upper()
             if ticker in placeholders or ticker not in seen:
@@ -302,6 +306,7 @@ def render_setup_tab(category_name, state_key):
         for f, original_ticker in unique_setups[:st.session_state[state_key]]:
             full_path = os.path.join(img_dir, f)
             st.markdown(f'<div class="setup-card">', unsafe_allow_html=True)
+            
             user_ticker = st.text_input("", value="" if original_ticker in placeholders else original_ticker, key=f"t_{f}", label_visibility="collapsed", placeholder="Enter Ticker...").upper().strip()
             
             try:
@@ -318,15 +323,19 @@ def render_setup_tab(category_name, state_key):
                 setup_time = datetime.fromtimestamp(os.path.getmtime(full_path)).strftime('%d/%m/%Y %H:%M')
             
             st.markdown(f"<div style='color: #64748B; font-size: 0.8rem; margin-bottom: 10px;'>🕒 Identified: {setup_time}</div>", unsafe_allow_html=True)
+            
             st.image(full_path, use_container_width=True)
+            
             techs = get_technical_data(user_ticker) if user_ticker else None
 
             if techs:
                 p = techs['price']
                 sl = p - (techs['ATR'] * atr_multiplier)
                 risk = ((p - sl) / p) * 100
+                
                 rsi_val = techs['RSI']
                 rsi_icon = "🟢" if rsi_val < 30 else "🔴" if rsi_val > 70 else "⚪"
+                
                 vol_val = techs['VolRatio']
                 vol_icon = "🔥" if vol_val > 1.5 else "🧊" if vol_val < 0.8 else "📊"
                 
@@ -351,9 +360,20 @@ def render_setup_tab(category_name, state_key):
                 </div>
                 """, unsafe_allow_html=True)
                 
-                c1, c2 = st.columns(2)
-                ent = c1.number_input("Entry Price", value=float(p), key=f"e_{f}")
-                stop = c2.number_input("Stop Loss", value=float(sl), key=f"s_{f}")
+                mc1, mc2 = st.columns([1, 1])
+                ent = mc1.number_input("Entry Price", value=float(p), key=f"e_{f}")
+                sl_type = mc2.radio("Stop Loss Type", ["ATR Multiplier", "Percentage (%)", "Price ($)"], horizontal=True, key=f"sl_type_{f}")
+                
+                if sl_type == "ATR Multiplier":
+                    sl_atr = st.number_input("ATR Multiplier", min_value=0.5, max_value=5.0, value=float(atr_multiplier), step=0.5, key=f"sl_atr_{f}")
+                    stop = ent - (techs['ATR'] * sl_atr)
+                    st.caption(f"Calculated SL Price: ${stop:.2f}")
+                elif sl_type == "Percentage (%)":
+                    sl_pct = st.number_input("Stop Loss (%)", min_value=0.1, max_value=99.0, value=5.0, step=0.5, key=f"sl_pct_{f}")
+                    stop = ent * (1 - (sl_pct / 100))
+                    st.caption(f"Calculated SL Price: ${stop:.2f}")
+                else:
+                    stop = st.number_input("Stop Loss ($)", value=float(sl), key=f"s_{f}")
                 
                 if st.button("📝 Log Trade", use_container_width=True, type="primary", key=f"l_{f}"):
                     db.log_trade(user_ticker, ent, stop, "", full_path)
@@ -396,22 +416,8 @@ with main_tab3:
             man_techs = get_technical_data(man_ticker)
             if man_techs:
                 man_p = man_techs['price']
-                
-                mc1, mc2 = st.columns([1, 1])
-                man_ent = mc1.number_input("Entry Price", value=float(man_p), key="man_e")
-                sl_type = mc2.radio("Stop Loss Type", ["ATR Multiplier", "Percentage (%)", "Price ($)"], horizontal=True, key="sl_type")
-                
-                if sl_type == "ATR Multiplier":
-                    man_sl_atr = st.number_input("ATR Multiplier", min_value=0.5, max_value=5.0, value=1.5, step=0.5, key="man_sl_atr")
-                    man_stop = man_p - (man_techs['ATR'] * man_sl_atr)
-                    st.caption(f"Calculated SL Price: ${man_stop:.2f}")
-                elif sl_type == "Percentage (%)":
-                    man_sl_pct = st.number_input("Stop Loss (%)", min_value=0.1, max_value=99.0, value=5.0, step=0.5, key="man_sl_pct")
-                    man_stop = man_ent * (1 - (man_sl_pct / 100))
-                    st.caption(f"Calculated SL Price: ${man_stop:.2f}")
-                else:
-                    default_sl = man_ent * 0.95
-                    man_stop = st.number_input("Stop Loss ($)", value=float(default_sl), key="man_s")
+                man_sl_base = man_p - (man_techs['ATR'] * 1.5)
+                man_risk_base = ((man_p - man_sl_base) / man_p) * 100
                 
                 rsi_val = man_techs['RSI']
                 rsi_icon = "🟢" if rsi_val < 30 else "🔴" if rsi_val > 70 else "⚪"
@@ -432,8 +438,28 @@ with main_tab3:
                         <span>{vol_icon} Volume</span>
                         <span>{vol_val:.1f}x</span>
                     </div>
+                    <div class="tech-box-row" style="margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px;">
+                        <span>Target Stop Loss</span>
+                        <span class="tech-box-highlight">${man_sl_base:.2f} (-{man_risk_base:.1f}%)</span>
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
+
+                mc1, mc2 = st.columns([1, 1])
+                man_ent = mc1.number_input("Entry Price", value=float(man_p), key="man_e")
+                sl_type = mc2.radio("Stop Loss Type", ["ATR Multiplier", "Percentage (%)", "Price ($)"], horizontal=True, key="man_sl_type")
+                
+                if sl_type == "ATR Multiplier":
+                    man_sl_atr = st.number_input("ATR Multiplier", min_value=0.5, max_value=5.0, value=1.5, step=0.5, key="man_sl_atr")
+                    man_stop = man_p - (man_techs['ATR'] * man_sl_atr)
+                    st.caption(f"Calculated SL Price: ${man_stop:.2f}")
+                elif sl_type == "Percentage (%)":
+                    man_sl_pct = st.number_input("Stop Loss (%)", min_value=0.1, max_value=99.0, value=5.0, step=0.5, key="man_sl_pct")
+                    man_stop = man_ent * (1 - (man_sl_pct / 100))
+                    st.caption(f"Calculated SL Price: ${man_stop:.2f}")
+                else:
+                    default_sl = man_ent * 0.95
+                    man_stop = st.number_input("Stop Loss ($)", value=float(default_sl), key="man_s")
                 
                 if st.button("📝 Log Manual Trade", use_container_width=True, type="primary", key="man_log_btn"):
                     db.log_trade(man_ticker, man_ent, man_stop, "", "")
@@ -500,7 +526,7 @@ with main_tab3:
                 clean_date = row['timestamp']
             st.markdown(f"<div style='color: #64748B; font-size: 0.8rem; margin-bottom: 15px;'>📅 Logged on: {clean_date}</div>", unsafe_allow_html=True)
             
-            c1, c2, c3 = st.columns([3, 1, 1])
+            c1, c2, c3 = st.columns([2.5, 1, 1.5])
             with c1: show_img = st.toggle("🔍 View Chart", key=f"show_{row['id']}")
             with c2: edit_mode = st.toggle("✏️ Edit", key=f"edit_mode_{row['id']}")
             with c3:

@@ -275,7 +275,7 @@ def get_upcoming_earnings():
 # ==========================================
 # HEADER
 # ==========================================
-st.markdown("<div class='main-title'>⚡ Aglo Trader <span>Terminal</span></div>", unsafe_allow_html=True)
+st.markdown("<div class='main-title'>🪙 Aglo Trader <span>Terminal</span></div>", unsafe_allow_html=True)
 
 pulse_data = get_market_pulse()
 if pulse_data:
@@ -395,7 +395,7 @@ def render_setup_tab(category_name, state_key):
                 st.rerun()
 
 # ==========================================
-# MAIN TABS 
+# MAIN TABS
 # ==========================================
 main_tab1, main_tab2, main_tab3 = st.tabs(["📊 Scanners", "📅 Earn", "📓 Log"])
 

@@ -163,7 +163,20 @@ st.markdown("""
         .journal-row { padding: 16px; }
         .stImage { width: 100% !important; }
         .main-title { font-size: 1.6rem !important; }
-        .stTabs [data-baseweb="tab"] { padding: 0 8px; font-size: 0.75rem; }
+        
+        /* THIS IS THE FIX: Allow tabs to shrink and wrap so they fit on mobile without scrolling */
+        .stTabs [data-baseweb="tab-list"] {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .stTabs [data-baseweb="tab"] { 
+            padding: 0 8px; 
+            font-size: 0.75rem; 
+            flex: 1 1 auto;
+            text-align: center;
+            height: 38px;
+        }
     }
 </style>
 """, unsafe_allow_html=True)

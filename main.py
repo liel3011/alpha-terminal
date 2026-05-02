@@ -478,16 +478,52 @@ with main_tab3:
 
     st.subheader("Interactive Trading Log")
     log_data = db.get_journal_data()
+    
     if not log_data.empty:
+        # --- ALERTS SYSTEM (Checks for active SL breaches or Profits) ---
+        sl_alerts = []
+        profit_alerts = []
+        
+        for _, row in log_data.iterrows():
+            live_techs = get_technical_data(row['ticker'])
+            if live_techs:
+                live_p = live_techs['price']
+                if live_p < row['atr_sl']:
+                    sl_alerts.append(f"**{row['ticker']}** dropped below SL (${row['atr_sl']:.2f}) ➔ Current: **${live_p:.2f}**")
+                elif live_p > row['entry']:
+                    profit_alerts.append(f"**{row['ticker']}** crossed above Entry (${row['entry']:.2f}) ➔ Current: **${live_p:.2f}**")
+                    
+        # Display top-level alerts if any exist
+        if sl_alerts or profit_alerts:
+            for alert in sl_alerts:
+                st.error(f"🚨 {alert}")
+            for alert in profit_alerts:
+                st.success(f"📈 {alert}")
+            st.write("") # Spacer
+        
+        # --- LOG RENDER LOOP ---
         for _, row in log_data.iterrows():
             st.markdown(f'<div class="journal-row">', unsafe_allow_html=True)
             risk = ((row['entry'] - row['atr_sl']) / row['entry']) * 100 if row['entry'] > 0 else 0
+            
+            # --- LIVE STATUS BADGE PER ROW ---
+            live_techs = get_technical_data(row['ticker'])
+            status_html = ""
+            if live_techs:
+                live_p = live_techs['price']
+                if live_p < row['atr_sl']:
+                    status_html = f"<span style='background: rgba(239,68,68,0.2); color: #EF4444; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; margin-left: 8px;'>🚨 SL HIT (${live_p:.2f})</span>"
+                elif live_p > row['entry']:
+                    status_html = f"<span style='background: rgba(16,185,129,0.2); color: #10B981; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; margin-left: 8px;'>🟢 PROFIT (${live_p:.2f})</span>"
+                else:
+                    status_html = f"<span style='background: rgba(245,158,11,0.2); color: #F59E0B; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; margin-left: 8px;'>🟡 ACTIVE (${live_p:.2f})</span>"
             
             html_info = f"""
             <div style='display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 12px;'>
                 <div style='display: flex; align-items: center; gap: 12px;'>
                     <span style='color:#3B82F6; font-size: 1.3rem; font-weight: 800;'>{row['ticker']}</span>
-                    <span style='color:#475569;'>|</span>
+                    {status_html}
+                    <span style='color:#475569; margin-left: 4px;'>|</span>
                     <span style='font-size: 1rem; color: #E2E8F0;'>Ent: <b>${row['entry']:.2f}</b></span>
                     <span style='color:#475569;'>|</span>
                     <span style='font-size: 1rem; color: #E2E8F0;'>SL: <b style='color:#EF4444;'>${row['atr_sl']:.2f}</b> <span style='font-size: 0.85rem; color:#EF4444;'>(-{risk:.1f}%)</span></span>

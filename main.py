@@ -179,6 +179,7 @@ def render_setup_tab(category_name, state_key):
     atr_multiplier = st.number_input("Risk Multiplier (ATR)", 0.5, 5.0, 1.5, 0.5, key=f"atr_{category_name}")
     img_dir = os.path.join("data", f"discord_{category_name}")
     if os.path.exists(img_dir):
+        # --- FIXED SORTING (Newest First) ---
         files = sorted([f for f in os.listdir(img_dir) if f.endswith('.png')], key=lambda x: os.path.getmtime(os.path.join(img_dir, x)), reverse=True)
         seen = set()
         unique_setups = []
@@ -192,10 +193,17 @@ def render_setup_tab(category_name, state_key):
 
         for f, original_ticker in unique_setups[:st.session_state[state_key]]:
             full_path = os.path.join(img_dir, f)
+            
+            # --- GET FILE DATE ---
+            setup_time = datetime.fromtimestamp(os.path.getmtime(full_path)).strftime('%d/%m/%Y %H:%M')
+            
             st.markdown(f'<div class="setup-card">', unsafe_allow_html=True)
             
-            # --- TICKER INPUT FIRST (NO LABEL) ---
+            # --- TICKER INPUT FIRST ---
             user_ticker = st.text_input("", value="" if original_ticker in placeholders else original_ticker, key=f"t_{f}", label_visibility="collapsed").upper().strip()
+            
+            # --- DISPLAY DATE (RESTORED) ---
+            st.caption(f"🕒 {setup_time}")
             
             # --- IMAGE SECOND ---
             st.image(full_path, use_container_width=True)

@@ -10,6 +10,7 @@ import shutil
 from dotenv import load_dotenv
 
 from core.database import DatabaseManager
+
 try:
     from integrations.discord_listener import DiscordListener
 except ImportError as e:
@@ -58,7 +59,15 @@ st.markdown("""
         align-items: center;
         gap: 10px;
     }
-    .main-title span { color: #3B82F6; font-size: 1.2rem; font-weight: 600; background: rgba(59,130,246,0.1); padding: 4px 10px; border-radius: 8px; }
+    
+    .main-title span { 
+        color: #3B82F6; 
+        font-size: 1.2rem; 
+        font-weight: 600; 
+        background: rgba(59,130,246,0.1); 
+        padding: 4px 10px; 
+        border-radius: 8px; 
+    }
 
     [data-testid="metric-container"] {
         background: linear-gradient(145deg, #131C2D, #0B101A);
@@ -67,13 +76,25 @@ st.markdown("""
         border-radius: 12px;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     }
-    div[data-testid="stMetricValue"] { font-size: 1.2rem !important; font-weight: 700; color: #10B981; }
-    div[data-testid="stMetricLabel"] { font-size: 0.8rem !important; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    div[data-testid="stMetricValue"] { 
+        font-size: 1.2rem !important; 
+        font-weight: 700; 
+        color: #10B981; 
+    }
+    
+    div[data-testid="stMetricLabel"] { 
+        font-size: 0.8rem !important; 
+        color: #94A3B8; 
+        text-transform: uppercase; 
+        letter-spacing: 0.5px; 
+    }
     
     .stTabs [data-baseweb="tab-list"] {
         gap: 6px;
         background-color: transparent;
     }
+    
     .stTabs [data-baseweb="tab"] {
         height: 45px;
         background-color: #131C2D;
@@ -84,6 +105,7 @@ st.markdown("""
         border-bottom: none;
         white-space: nowrap;
     }
+    
     .stTabs [aria-selected="true"] {
         background-color: #3B82F6 !important;
         color: white !important;
@@ -94,6 +116,7 @@ st.markdown("""
     .stTabs .stTabs [data-baseweb="tab-list"] {
         gap: 4px;
     }
+    
     .stTabs .stTabs [data-baseweb="tab"] {
         height: 32px;
         padding: 0 12px;
@@ -101,6 +124,7 @@ st.markdown("""
         background-color: #0F172A;
         border-radius: 6px 6px 0 0;
     }
+    
     .stTabs .stTabs [aria-selected="true"] {
         background-color: #2563EB !important;
     }
@@ -114,6 +138,7 @@ st.markdown("""
         box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
         transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
     }
+    
     .setup-card:hover {
         transform: translateY(-3px);
         box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.6);
@@ -131,9 +156,30 @@ st.markdown("""
         flex-direction: column;
         gap: 8px;
     }
-    .tech-box-header { font-size: 1.1rem; font-weight: 700; color: #F8FAFC; display: flex; justify-content: space-between; border-bottom: 1px solid #1E293B; padding-bottom: 8px; margin-bottom: 4px; }
-    .tech-box-row { display: flex; justify-content: space-between; font-size: 0.9rem; color: #CBD5E1; }
-    .tech-box-highlight { color: #EF4444; font-weight: 700; font-size: 1rem; }
+    
+    .tech-box-header { 
+        font-size: 1.1rem; 
+        font-weight: 700; 
+        color: #F8FAFC; 
+        display: flex; 
+        justify-content: space-between; 
+        border-bottom: 1px solid #1E293B; 
+        padding-bottom: 8px; 
+        margin-bottom: 4px; 
+    }
+    
+    .tech-box-row { 
+        display: flex; 
+        justify-content: space-between; 
+        font-size: 0.9rem; 
+        color: #CBD5E1; 
+    }
+    
+    .tech-box-highlight { 
+        color: #EF4444; 
+        font-weight: 700; 
+        font-size: 1rem; 
+    }
     
     .journal-row { 
         background-color: #131C2D; 
@@ -143,24 +189,33 @@ st.markdown("""
         border: 1px solid #1E293B; 
         transition: background-color 0.2s ease;
     }
-    .journal-row:hover { background-color: #1A263D; border-color: #334155; }
+    
+    .journal-row:hover { 
+        background-color: #1A263D; 
+        border-color: #334155; 
+    }
     
     .stButton > button {
         border-radius: 10px !important;
         font-weight: 600 !important;
         transition: all 0.2s ease !important;
     }
+    
     .stButton > button[kind="primary"] {
         background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
         border: none !important;
     }
+    
     .stButton > button[kind="primary"]:hover {
         background: linear-gradient(135deg, #3B82F6, #2563EB) !important;
         box-shadow: 0 0 15px rgba(59, 130, 246, 0.4) !important;
         transform: translateY(-1px);
     }
     
-    .stImage img { border-radius: 10px; border: 1px solid #1E293B; }
+    .stImage img { 
+        border-radius: 10px; 
+        border: 1px solid #1E293B; 
+    }
 
     .stTextInput>div>div>input, .stNumberInput>div>div>input {
         background-color: #0F172A !important;
@@ -179,6 +234,7 @@ st.markdown("""
             flex-wrap: wrap;
             justify-content: center;
         }
+        
         .stTabs [data-baseweb="tab"] { 
             padding: 0 8px; 
             font-size: 0.75rem; 
@@ -186,6 +242,7 @@ st.markdown("""
             text-align: center;
             height: 38px;
         }
+        
         .stTabs .stTabs [data-baseweb="tab"] {
             height: 30px;
             font-size: 0.7rem;
@@ -249,7 +306,6 @@ def get_upcoming_earnings():
                     next_date = min(future_dates)
                     days_left = (next_date - datetime.now().date()).days
                     results.append({"Ticker": t, "Report Date": next_date.strftime('%Y-%m-%d'), "Days Left": days_left})
-            
             elif isinstance(cal, dict) and 'Earnings Date' in cal:
                 dates = cal['Earnings Date']
                 if not isinstance(dates, list): dates = [dates]
@@ -330,8 +386,8 @@ def render_setup_tab(category_name, state_key):
 
             if techs:
                 p = techs['price']
-                sl = p - (techs['ATR'] * atr_multiplier)
-                risk = ((p - sl) / p) * 100
+                sl_base = p - (techs['ATR'] * atr_multiplier)
+                risk_base = ((p - sl_base) / p) * 100
                 
                 rsi_val = techs['RSI']
                 rsi_icon = "🟢" if rsi_val < 30 else "🔴" if rsi_val > 70 else "⚪"
@@ -355,25 +411,21 @@ def render_setup_tab(category_name, state_key):
                     </div>
                     <div class="tech-box-row" style="margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px;">
                         <span>Target Stop Loss</span>
-                        <span class="tech-box-highlight">${sl:.2f} (-{risk:.1f}%)</span>
+                        <span class="tech-box-highlight">${sl_base:.2f} (-{risk_base:.1f}%)</span>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
                 
-                mc1, mc2 = st.columns([1, 1])
-                ent = mc1.number_input("Entry Price", value=float(p), key=f"e_{f}")
-                sl_type = mc2.radio("Stop Loss Type", ["ATR Multiplier", "Percentage (%)", "Price ($)"], horizontal=True, key=f"sl_type_{f}")
+                c1, c2 = st.columns([1, 1])
+                ent = c1.number_input("Entry Price", value=float(p), key=f"e_{f}")
+                sl_type = c2.radio("Stop Loss Type", ["Percentage (%)", "Price ($)"], horizontal=True, key=f"sl_type_{f}")
                 
-                if sl_type == "ATR Multiplier":
-                    sl_atr = st.number_input("ATR Multiplier", min_value=0.5, max_value=5.0, value=float(atr_multiplier), step=0.5, key=f"sl_atr_{f}")
-                    stop = ent - (techs['ATR'] * sl_atr)
-                    st.caption(f"Calculated SL Price: ${stop:.2f}")
-                elif sl_type == "Percentage (%)":
-                    sl_pct = st.number_input("Stop Loss (%)", min_value=0.1, max_value=99.0, value=5.0, step=0.5, key=f"sl_pct_{f}")
+                if sl_type == "Percentage (%)":
+                    sl_pct = st.number_input("Stop Loss (%)", min_value=0.1, max_value=99.0, value=float(f"{risk_base:.1f}"), step=0.5, key=f"sl_pct_{f}")
                     stop = ent * (1 - (sl_pct / 100))
                     st.caption(f"Calculated SL Price: ${stop:.2f}")
                 else:
-                    stop = st.number_input("Stop Loss ($)", value=float(sl), key=f"s_{f}")
+                    stop = st.number_input("Stop Loss ($)", value=float(sl_base), key=f"s_{f}")
                 
                 if st.button("📝 Log Trade", use_container_width=True, type="primary", key=f"l_{f}"):
                     db.log_trade(user_ticker, ent, stop, "", full_path)
@@ -411,12 +463,15 @@ with main_tab2:
 
 with main_tab3:
     with st.expander("➕ Add Manual Trade"):
-        man_ticker = st.text_input("Enter Ticker Symbol:", key="man_ticker", placeholder="e.g. AAPL...").upper().strip()
+        c_tick, c_atr = st.columns([2, 1])
+        man_ticker = c_tick.text_input("Enter Ticker Symbol:", key="man_ticker", placeholder="e.g. AAPL...").upper().strip()
+        man_atr_mult = c_atr.number_input("Risk Multiplier (ATR)", 0.5, 5.0, 1.5, 0.5, key="man_atr_mult")
+        
         if man_ticker:
             man_techs = get_technical_data(man_ticker)
             if man_techs:
                 man_p = man_techs['price']
-                man_sl_base = man_p - (man_techs['ATR'] * 1.5)
+                man_sl_base = man_p - (man_techs['ATR'] * man_atr_mult)
                 man_risk_base = ((man_p - man_sl_base) / man_p) * 100
                 
                 rsi_val = man_techs['RSI']
@@ -444,22 +499,17 @@ with main_tab3:
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
-
+                
                 mc1, mc2 = st.columns([1, 1])
                 man_ent = mc1.number_input("Entry Price", value=float(man_p), key="man_e")
-                sl_type = mc2.radio("Stop Loss Type", ["ATR Multiplier", "Percentage (%)", "Price ($)"], horizontal=True, key="man_sl_type")
+                sl_type = mc2.radio("Stop Loss Type", ["Percentage (%)", "Price ($)"], horizontal=True, key="man_sl_type")
                 
-                if sl_type == "ATR Multiplier":
-                    man_sl_atr = st.number_input("ATR Multiplier", min_value=0.5, max_value=5.0, value=1.5, step=0.5, key="man_sl_atr")
-                    man_stop = man_p - (man_techs['ATR'] * man_sl_atr)
-                    st.caption(f"Calculated SL Price: ${man_stop:.2f}")
-                elif sl_type == "Percentage (%)":
-                    man_sl_pct = st.number_input("Stop Loss (%)", min_value=0.1, max_value=99.0, value=5.0, step=0.5, key="man_sl_pct")
+                if sl_type == "Percentage (%)":
+                    man_sl_pct = st.number_input("Stop Loss (%)", min_value=0.1, max_value=99.0, value=float(f"{man_risk_base:.1f}"), step=0.5, key="man_sl_pct")
                     man_stop = man_ent * (1 - (man_sl_pct / 100))
                     st.caption(f"Calculated SL Price: ${man_stop:.2f}")
                 else:
-                    default_sl = man_ent * 0.95
-                    man_stop = st.number_input("Stop Loss ($)", value=float(default_sl), key="man_s")
+                    man_stop = st.number_input("Stop Loss ($)", value=float(man_sl_base), key="man_s")
                 
                 if st.button("📝 Log Manual Trade", use_container_width=True, type="primary", key="man_log_btn"):
                     db.log_trade(man_ticker, man_ent, man_stop, "", "")

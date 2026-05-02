@@ -1,5 +1,6 @@
 import os
 import time
+import sqlite3
 import streamlit as st
 import pandas as pd
 import yfinance as yf
@@ -19,6 +20,17 @@ except ImportError as e:
 load_dotenv()
 st.set_page_config(page_title="Aglo Trader Terminal", layout="wide", page_icon="🪙", initial_sidebar_state="collapsed")
 db = DatabaseManager()
+
+# --- DB HELPER FOR EDITING TRADES ---
+def update_trade_entry_sl(trade_id, new_entry, new_sl):
+    try:
+        conn = sqlite3.connect('data/journal.db')
+        c = conn.cursor()
+        c.execute("UPDATE journal SET entry = ?, atr_sl = ? WHERE id = ?", (new_entry, new_sl, trade_id))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        st.error(f"Database error: {e}")
 
 # --- HIGH-END PROFESSIONAL CSS ---
 st.markdown("""
@@ -436,12 +448,18 @@ with main_tab3:
             man_techs = get_technical_data(man_ticker)
             if man_techs:
                 man_p = man_techs['price']
-                man_sl = man_p - (man_techs['ATR'] * 1.5)
-                man_risk = ((man_p - man_sl) / man_p) * 100
+                
+                # Dynamic inputs
+                mc1, mc2, mc3 = st.columns(3)
+                man_ent = mc1.number_input("Entry Price", value=float(man_p), key="man_e")
+                man_sl_pct = mc2.number_input("Stop Loss (%)", min_value=0.1, max_value=99.0, value=5.0, step=0.5, key="man_sl_pct")
+                
+                # Calculate SL dollar value dynamically based on percentage
+                calculated_sl = man_ent * (1 - (man_sl_pct / 100))
+                man_stop = mc3.number_input("Stop Loss ($)", value=float(calculated_sl), key="man_s")
                 
                 rsi_val = man_techs['RSI']
                 rsi_icon = "🟢" if rsi_val < 30 else "🔴" if rsi_val > 70 else "⚪"
-                
                 vol_val = man_techs['VolRatio']
                 vol_icon = "🔥" if vol_val > 1.5 else "🧊" if vol_val < 0.8 else "📊"
                 
@@ -459,16 +477,8 @@ with main_tab3:
                         <span>{vol_icon} Volume</span>
                         <span>{vol_val:.1f}x</span>
                     </div>
-                    <div class="tech-box-row" style="margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px;">
-                        <span>Target Stop Loss</span>
-                        <span class="tech-box-highlight">${man_sl:.2f} (-{man_risk:.1f}%)</span>
-                    </div>
                 </div>
                 """, unsafe_allow_html=True)
-                
-                c1, c2 = st.columns(2)
-                man_ent = c1.number_input("Entry Price", value=float(man_p), key="man_e")
-                man_stop = c2.number_input("Stop Loss", value=float(man_sl), key="man_s")
                 
                 if st.button("📝 Log Manual Trade", use_container_width=True, type="primary", key="man_log_btn"):
                     db.log_trade(man_ticker, man_ent, man_stop, "", "")
@@ -480,7 +490,7 @@ with main_tab3:
     log_data = db.get_journal_data()
     
     if not log_data.empty:
-        # --- ALERTS SYSTEM (Checks for active SL breaches or Profits) ---
+        # --- ALERTS SYSTEM ---
         sl_alerts = []
         profit_alerts = []
         
@@ -493,34 +503,34 @@ with main_tab3:
                 elif live_p > row['entry']:
                     profit_alerts.append(f"**{row['ticker']}** crossed above Entry (${row['entry']:.2f}) ➔ Current: **${live_p:.2f}**")
                     
-        # Display top-level alerts if any exist
         if sl_alerts or profit_alerts:
-            for alert in sl_alerts:
-                st.error(f"🚨 {alert}")
-            for alert in profit_alerts:
-                st.success(f"📈 {alert}")
-            st.write("") # Spacer
+            for alert in sl_alerts: st.error(f"🚨 {alert}")
+            for alert in profit_alerts: st.success(f"📈 {alert}")
+            st.write("") 
         
         # --- LOG RENDER LOOP ---
         for _, row in log_data.iterrows():
             st.markdown(f'<div class="journal-row">', unsafe_allow_html=True)
             risk = ((row['entry'] - row['atr_sl']) / row['entry']) * 100 if row['entry'] > 0 else 0
             
-            # --- LIVE STATUS BADGE PER ROW ---
+            # --- LIVE STATUS & PROFIT BADGE PER ROW ---
             live_techs = get_technical_data(row['ticker'])
             status_html = ""
             if live_techs:
                 live_p = live_techs['price']
-                if live_p < row['atr_sl']:
-                    status_html = f"<span style='background: rgba(239,68,68,0.2); color: #EF4444; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; margin-left: 8px;'>🚨 SL HIT (${live_p:.2f})</span>"
-                elif live_p > row['entry']:
-                    status_html = f"<span style='background: rgba(16,185,129,0.2); color: #10B981; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; margin-left: 8px;'>🟢 PROFIT (${live_p:.2f})</span>"
+                profit_dlr = live_p - row['entry']
+                profit_pct = (profit_dlr / row['entry']) * 100 if row['entry'] > 0 else 0
+                
+                if live_p <= row['atr_sl']:
+                    status_html = f"<span style='background: rgba(239,68,68,0.2); color: #EF4444; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; margin-left: 8px;'>🚨 SL HIT (${live_p:.2f}) | P&L: {profit_pct:.2f}% (${profit_dlr:.2f})</span>"
+                elif profit_dlr > 0:
+                    status_html = f"<span style='background: rgba(16,185,129,0.2); color: #10B981; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; margin-left: 8px;'>🟢 PROFIT (${live_p:.2f}) | P&L: +{profit_pct:.2f}% (+${profit_dlr:.2f})</span>"
                 else:
-                    status_html = f"<span style='background: rgba(245,158,11,0.2); color: #F59E0B; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; margin-left: 8px;'>🟡 ACTIVE (${live_p:.2f})</span>"
+                    status_html = f"<span style='background: rgba(245,158,11,0.2); color: #F59E0B; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; margin-left: 8px;'>🟡 ACTIVE (${live_p:.2f}) | P&L: {profit_pct:.2f}% (${profit_dlr:.2f})</span>"
             
             html_info = f"""
             <div style='display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 12px;'>
-                <div style='display: flex; align-items: center; gap: 12px;'>
+                <div style='display: flex; align-items: center; flex-wrap: wrap; gap: 8px;'>
                     <span style='color:#3B82F6; font-size: 1.3rem; font-weight: 800;'>{row['ticker']}</span>
                     {status_html}
                     <span style='color:#475569; margin-left: 4px;'>|</span>
@@ -538,11 +548,22 @@ with main_tab3:
                 clean_date = row['timestamp']
             st.markdown(f"<div style='color: #64748B; font-size: 0.8rem; margin-bottom: 15px;'>📅 Logged on: {clean_date}</div>", unsafe_allow_html=True)
             
-            c1, c2 = st.columns([3, 1])
+            # Add Edit functionality
+            c1, c2, c3 = st.columns([3, 1, 1])
             with c1: show_img = st.toggle("🔍 View Chart", key=f"show_{row['id']}")
-            with c2:
+            with c2: edit_mode = st.toggle("✏️", key=f"edit_mode_{row['id']}")
+            with c3:
                 if st.button("🗑️", key=f"del_{row['id']}", use_container_width=True):
                     db.delete_trade(row['id'])
+                    st.rerun()
+            
+            # Edit fields drop-down
+            if edit_mode:
+                ec1, ec2, ec3 = st.columns(3)
+                new_ent = ec1.number_input("Edit Entry", value=float(row['entry']), key=f"ed_e_{row['id']}")
+                new_sl = ec2.number_input("Edit SL", value=float(row['atr_sl']), key=f"ed_s_{row['id']}")
+                if ec3.button("💾 Save Update", key=f"save_{row['id']}", use_container_width=True):
+                    update_trade_entry_sl(row['id'], new_ent, new_sl)
                     st.rerun()
             
             if show_img and row.get('image_data'):

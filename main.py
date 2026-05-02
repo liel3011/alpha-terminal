@@ -5,7 +5,7 @@ import pandas as pd
 import yfinance as yf
 from datetime import datetime
 import base64
-import shutil  # נוסף לצורך מחיקת תיקיות ב-Sync
+import shutil
 from dotenv import load_dotenv
 
 # --- INTERNAL IMPORTS ---
@@ -17,87 +17,130 @@ except ImportError as e:
 
 # --- INITIALIZATION ---
 load_dotenv()
-st.set_page_config(page_title="Market Terminal", layout="wide", page_icon="⚡", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Alpha Terminal Pro", layout="wide", page_icon="⚡", initial_sidebar_state="collapsed")
 db = DatabaseManager()
 
-# --- HIGH-END PROFESSIONAL CSS (FIXED & MINIMIZED TOP) ---
+# --- HIGH-END PROFESSIONAL CSS ---
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     
+    /* Base Theme */
     .stApp { 
-        background-color: #090B10; 
-        color: #E2E8F0; 
+        background-color: #07090E; 
+        color: #F1F5F9; 
         font-family: 'Inter', sans-serif;
     }
     
-    /* Pushing content to the very top */
+    /* Layout Adjustments */
     .block-container {
-        padding-top: 1rem !important;
-        padding-bottom: 0rem !important;
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+        max-width: 1400px;
     }
     
-    /* Hide Streamlit Default UI Elements */
+    /* Hide Streamlit Clutter */
     header[data-testid="stHeader"], footer { display: none !important; }
     [data-testid="stAppViewBlocker"], div[data-testid="stLoading"] { display: none !important; }
     
-    /* Compact Top Title */
+    /* Main Title */
     .main-title {
-        color: white; 
-        margin-bottom: 10px; 
-        font-weight: 700; 
-        font-size: 1.8rem !important; 
-        letter-spacing: -0.5px;
-    }
-
-    /* Compact Metrics */
-    [data-testid="metric-container"] {
-        background-color: #121722;
-        border: 1px solid #1F2636;
-        padding: 5px 10px !important; 
-        border-radius: 8px;
-    }
-    div[data-testid="stMetricValue"] { 
-        font-size: 0.9rem !important; 
-        color: #10B981; 
-    }
-    div[data-testid="stMetricLabel"] {
-        font-size: 0.7rem !important; 
-    }
-    
-    /* Setup Cards */
-    .setup-card { 
-        background-color: #121722; 
-        padding: 20px; 
-        border-radius: 14px; 
+        color: #FFFFFF; 
         margin-bottom: 20px; 
-        border: 1px solid #1F2636; 
+        font-weight: 800; 
+        font-size: 2.2rem !important; 
+        letter-spacing: -1px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .main-title span { color: #3B82F6; font-size: 1.2rem; font-weight: 600; background: rgba(59,130,246,0.1); padding: 4px 10px; border-radius: 8px; }
+
+    /* Market Metrics */
+    [data-testid="metric-container"] {
+        background: linear-gradient(145deg, #131C2D, #0B101A);
+        border: 1px solid #1E293B;
+        padding: 12px 16px !important; 
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    }
+    div[data-testid="stMetricValue"] { font-size: 1.2rem !important; font-weight: 700; color: #10B981; }
+    div[data-testid="stMetricLabel"] { font-size: 0.8rem !important; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    /* Modern Setup Cards */
+    .setup-card { 
+        background-color: #131C2D; 
+        padding: 24px; 
+        border-radius: 16px; 
+        margin-bottom: 24px; 
+        border: 1px solid #1E293B;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .setup-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.6);
+        border-color: #334155;
     }
     
+    /* Tech Box Dashboard Style */
     .tech-box { 
-        background: linear-gradient(145deg, #171E2D, #0F131D);
-        padding: 15px; 
-        border-radius: 10px; 
-        font-size: 0.9rem; 
-        margin: 12px 0; 
+        background: rgba(15, 23, 42, 0.6);
+        padding: 16px; 
+        border-radius: 12px; 
+        margin: 16px 0; 
+        border: 1px solid #1E293B;
         border-left: 4px solid #3B82F6; 
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
     }
+    .tech-box-header { font-size: 1.1rem; font-weight: 700; color: #F8FAFC; display: flex; justify-content: space-between; border-bottom: 1px solid #1E293B; padding-bottom: 8px; margin-bottom: 4px; }
+    .tech-box-row { display: flex; justify-content: space-between; font-size: 0.9rem; color: #CBD5E1; }
+    .tech-box-highlight { color: #EF4444; font-weight: 700; font-size: 1rem; }
     
     /* Journal Rows */
     .journal-row { 
-        background-color: #121722; 
-        padding: 15px; 
-        border-radius: 10px; 
-        margin-bottom: 10px; 
-        border: 1px solid #1F2636; 
+        background-color: #131C2D; 
+        padding: 20px; 
+        border-radius: 12px; 
+        margin-bottom: 12px; 
+        border: 1px solid #1E293B; 
+        transition: background-color 0.2s ease;
+    }
+    .journal-row:hover { background-color: #1A263D; border-color: #334155; }
+    
+    /* Buttons Enhancements */
+    .stButton > button {
+        border-radius: 10px !important;
+        font-weight: 600 !important;
+        transition: all 0.2s ease !important;
+    }
+    .stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
+        border: none !important;
+    }
+    .stButton > button[kind="primary"]:hover {
+        background: linear-gradient(135deg, #3B82F6, #2563EB) !important;
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.4) !important;
+        transform: translateY(-1px);
     }
     
-    .stImage img { border-radius: 8px; }
+    /* Images */
+    .stImage img { border-radius: 10px; border: 1px solid #1E293B; }
+
+    /* Inputs */
+    .stTextInput>div>div>input, .stNumberInput>div>div>input {
+        background-color: #0F172A !important;
+        border-radius: 8px !important;
+        color: #F8FAFC !important;
+    }
 
     @media (max-width: 768px) {
-        .setup-card { padding: 12px; }
-        .journal-row { padding: 10px; }
+        .setup-card { padding: 16px; }
+        .journal-row { padding: 16px; }
         .stImage { width: 100% !important; }
+        .main-title { font-size: 1.6rem !important; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -154,9 +197,9 @@ def get_upcoming_earnings():
     return pd.DataFrame(results).sort_values(by="Days Left") if results else pd.DataFrame()
 
 # ==========================================
-# HEADER (COMPACTED)
+# HEADER
 # ==========================================
-st.markdown("<div class='main-title'>⚡ ALPHA TERMINAL</div>", unsafe_allow_html=True)
+st.markdown("<div class='main-title'>⚡ ALPHA TERMINAL <span>PRO</span></div>", unsafe_allow_html=True)
 
 pulse_data = get_market_pulse()
 if pulse_data:
@@ -167,9 +210,9 @@ if pulse_data:
         cols[i].metric(data['name'], f"${data['price']:.2f}", f"{data['change']:+.2f}%", delta_color=color)
 
 # --- SYNC BUTTON WITH FULL DATA WIPE ---
-if st.button("🔄 Sync Channels", use_container_width=True, type="primary"):
-    with st.spinner("fetching..."):
-        # Deleting old folders to ensure fresh import
+st.write("") # Tiny spacer
+if st.button("🔄 Sync Channels (Fresh Fetch)", use_container_width=True, type="primary"):
+    with st.spinner("Fetching latest setups and cleaning old data..."):
         for cat in ["breakouts", "trendlines", "fibonacci"]:
             folder = os.path.join("data", f"discord_{cat}")
             if os.path.exists(folder):
@@ -188,7 +231,6 @@ def render_setup_tab(category_name, state_key):
     atr_multiplier = st.number_input("Risk Multiplier (ATR)", 0.5, 5.0, 1.5, 0.5, key=f"atr_{category_name}")
     img_dir = os.path.join("data", f"discord_{category_name}")
     if os.path.exists(img_dir):
-        # --- FIXED SORTING ---
         files = sorted([f for f in os.listdir(img_dir) if f.endswith('.png')], 
                        key=lambda x: int(''.join(filter(str.isdigit, x.split('_')[-1]))) if '_' in x else 0, 
                        reverse=True)
@@ -207,19 +249,14 @@ def render_setup_tab(category_name, state_key):
             full_path = os.path.join(img_dir, f)
             st.markdown(f'<div class="setup-card">', unsafe_allow_html=True)
             
-            # --- TICKER INPUT FIRST ---
-            user_ticker = st.text_input("", value="" if original_ticker in placeholders else original_ticker, key=f"t_{f}", label_visibility="collapsed").upper().strip()
+            user_ticker = st.text_input("", value="" if original_ticker in placeholders else original_ticker, key=f"t_{f}", label_visibility="collapsed", placeholder="Enter Ticker...").upper().strip()
             
-            # --- FIXED ORIGINAL DISCORD DATE EXTRACTION ---
             try:
                 raw_id = ''.join(filter(str.isdigit, f.split('_')[-1]))
                 ts_val = int(raw_id)
-                # If it's a Discord Snowflake (Large integer, usually 18-19 digits)
                 if ts_val > 10**17:
-                    # Discord Snowflake formula: (snowflake >> 22) + 1420070400000
                     unix_ts = ((ts_val >> 22) + 1420070400000) / 1000
                     setup_time = datetime.fromtimestamp(unix_ts).strftime('%d/%m/%Y %H:%M')
-                # If it's a Unix timestamp (10 digits)
                 elif 1000000000 < ts_val < 2500000000:
                     setup_time = datetime.fromtimestamp(ts_val).strftime('%d/%m/%Y %H:%M')
                 else:
@@ -227,9 +264,8 @@ def render_setup_tab(category_name, state_key):
             except:
                 setup_time = datetime.fromtimestamp(os.path.getmtime(full_path)).strftime('%d/%m/%Y %H:%M')
             
-            st.caption(f"🕒 Original Setup: {setup_time}")
+            st.markdown(f"<div style='color: #64748B; font-size: 0.8rem; margin-bottom: 10px;'>🕒 Identified: {setup_time}</div>", unsafe_allow_html=True)
             
-            # --- IMAGE SECOND ---
             st.image(full_path, use_container_width=True)
             
             techs = get_technical_data(user_ticker) if user_ticker else None
@@ -239,56 +275,68 @@ def render_setup_tab(category_name, state_key):
                 sl = p - (techs['ATR'] * atr_multiplier)
                 risk = ((p - sl) / p) * 100
                 
-                # --- VISUAL INDICATORS LOGIC ---
                 rsi_val = techs['RSI']
                 rsi_icon = "🟢" if rsi_val < 30 else "🔴" if rsi_val > 70 else "⚪"
                 
                 vol_val = techs['VolRatio']
                 vol_icon = "🔥" if vol_val > 1.5 else "🧊" if vol_val < 0.8 else "📊"
                 
+                # HTML Dashboard snippet
                 st.markdown(f"""
                 <div class="tech-box">
-                    <b>{user_ticker} | ${p:.2f}</b><br>
-                    {rsi_icon} RSI: {rsi_val:.0f} | {vol_icon} Vol: {vol_val:.1f}x<br>
-                    <span style="color:#EF4444; font-weight:bold;">Suggested SL: ${sl:.2f} (-{risk:.1f}%)</span>
+                    <div class="tech-box-header">
+                        <span>{user_ticker}</span>
+                        <span style="color: #10B981;">${p:.2f}</span>
+                    </div>
+                    <div class="tech-box-row">
+                        <span>{rsi_icon} RSI</span>
+                        <span>{rsi_val:.0f}</span>
+                    </div>
+                    <div class="tech-box-row">
+                        <span>{vol_icon} Volume</span>
+                        <span>{vol_val:.1f}x</span>
+                    </div>
+                    <div class="tech-box-row" style="margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px;">
+                        <span>Target Stop Loss</span>
+                        <span class="tech-box-highlight">${sl:.2f} (-{risk:.1f}%)</span>
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
                 
                 c1, c2 = st.columns(2)
-                ent = c1.number_input("Entry", value=float(p), key=f"e_{f}")
-                stop = c2.number_input("Stop", value=float(sl), key=f"s_{f}")
+                ent = c1.number_input("Entry Price", value=float(p), key=f"e_{f}")
+                stop = c2.number_input("Stop Loss", value=float(sl), key=f"s_{f}")
                 
-                if st.button("📝 Log Trade", use_container_width=True, type="primary", key=f"l_{f}"):
+                if st.button("📝 Log Trade to Journal", use_container_width=True, type="primary", key=f"l_{f}"):
                     db.log_trade(user_ticker, ent, stop, "", full_path)
-                    st.success("Logged!")
+                    st.success("Successfully Logged!")
             else:
-                st.caption("Enter ticker to load technicals")
+                st.caption("Waiting for valid ticker symbol to fetch technical data...")
             st.markdown('</div>', unsafe_allow_html=True)
 
         if len(unique_setups) > st.session_state[state_key]:
-            if st.button("Load More", use_container_width=True, key=f"m_{category_name}"):
+            if st.button("Load More Setups", use_container_width=True, key=f"m_{category_name}"):
                 st.session_state[state_key] += 3
                 st.rerun()
 
 # ==========================================
 # TABS
 # ==========================================
-t1, t2, t3, t4, t5 = st.tabs(["🚀 Break", "📈 Trend", "📉 Fib", "📅 Earn", "📓 Journal"])
+t1, t2, t3, t4, t5 = st.tabs(["🚀 Breakouts", "📈 Trendlines", "📉 Fib", "📅 Earnings", "📓 Journal"])
 
 with t1: render_setup_tab("breakouts", "visible_count_breakouts")
 with t2: render_setup_tab("trendlines", "visible_count_trendlines")
 with t3: render_setup_tab("fibonacci", "visible_count_fibonacci")
+
 with t4:
     df = get_upcoming_earnings()
     if not df.empty:
-        # פונקציית עיצוב חכמה לטבלה
         def style_days(val):
-            if val <= 3: color = '#EF4444' # אדום בוהק
-            elif val <= 7: color = '#F59E0B' # כתום
-            else: color = '#10B981' # ירוק
-            return f'color: {color}; font-weight: bold;'
+            if val <= 3: color = '#EF4444' 
+            elif val <= 7: color = '#F59E0B' 
+            else: color = '#10B981' 
+            return f'color: {color}; font-weight: 700;'
 
-        # הכנת הטבלה עם אייקונים וכותרות יפות
         df_display = df.copy()
         df_display.columns = ["Ticker", "📅 Report Date", "⏳ Days Left"]
         
@@ -301,18 +349,23 @@ with t4:
         st.info("No earnings reports found for major tickers.")
 
 with t5:
-    st.subheader("Trading Journal")
+    st.subheader("Interactive Trading Journal")
     journal = db.get_journal_data()
     if not journal.empty:
         for _, row in journal.iterrows():
             st.markdown(f'<div class="journal-row">', unsafe_allow_html=True)
             risk = ((row['entry'] - row['atr_sl']) / row['entry']) * 100 if row['entry'] > 0 else 0
             
+            # Refined flexbox layout for journal entry info
             html_info = f"""
-            <div style='font-size: 1rem; margin-bottom: 5px;'>
-                <b style='color:#3B82F6;'>{row['ticker']}</b> | 
-                Ent: <b>${row['entry']:.2f}</b> | 
-                SL: <span style='color:#EF4444; font-weight:bold;'>${row['atr_sl']:.2f} (-{risk:.1f}%)</span>
+            <div style='display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 12px;'>
+                <div style='display: flex; align-items: center; gap: 12px;'>
+                    <span style='color:#3B82F6; font-size: 1.3rem; font-weight: 800;'>{row['ticker']}</span>
+                    <span style='color:#475569;'>|</span>
+                    <span style='font-size: 1rem; color: #E2E8F0;'>Ent: <b>${row['entry']:.2f}</b></span>
+                    <span style='color:#475569;'>|</span>
+                    <span style='font-size: 1rem; color: #E2E8F0;'>SL: <b style='color:#EF4444;'>${row['atr_sl']:.2f}</b> <span style='font-size: 0.85rem; color:#EF4444;'>(-{risk:.1f}%)</span></span>
+                </div>
             </div>
             """
             st.markdown(html_info, unsafe_allow_html=True)
@@ -321,7 +374,7 @@ with t5:
                 clean_date = pd.to_datetime(row['timestamp']).strftime('%d/%m/%Y %H:%M')
             except:
                 clean_date = row['timestamp']
-            st.caption(f"📅 {clean_date}")
+            st.markdown(f"<div style='color: #64748B; font-size: 0.8rem; margin-bottom: 15px;'>📅 Logged on: {clean_date}</div>", unsafe_allow_html=True)
             
             c1, c2 = st.columns(2)
             with c1: show_img = st.toggle("🔍 View Chart", key=f"show_{row['id']}")
@@ -338,5 +391,5 @@ with t5:
             if current_note and current_note.startswith("Category:"):
                 current_note = ""
                 
-            st.text_input("Notes:", value=current_note, key=f"n_{row['id']}", placeholder="Add your notes here...", on_change=lambda r=row['id']: db.update_notes(r, st.session_state[f"n_{r}"]))
+            st.text_input("Notes:", value=current_note, key=f"n_{row['id']}", placeholder="Add your reflections or exit notes...", on_change=lambda r=row['id']: db.update_notes(r, st.session_state[f"n_{r}"]))
             st.markdown('</div>', unsafe_allow_html=True)

@@ -17,7 +17,7 @@ except ImportError as e:
 
 # --- INITIALIZATION ---
 load_dotenv()
-st.set_page_config(page_title="Alpha Terminal Pro", layout="wide", page_icon="⚡", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Aglo Trader Terminal", layout="wide", page_icon="⚡", initial_sidebar_state="collapsed")
 db = DatabaseManager()
 
 # --- HIGH-END PROFESSIONAL CSS ---
@@ -67,6 +67,28 @@ st.markdown("""
     div[data-testid="stMetricValue"] { font-size: 1.2rem !important; font-weight: 700; color: #10B981; }
     div[data-testid="stMetricLabel"] { font-size: 0.8rem !important; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; }
     
+    /* Customizing Streamlit Tabs (No Scrolling) */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 6px;
+        background-color: transparent;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 45px;
+        background-color: #131C2D;
+        border-radius: 8px 8px 0 0;
+        padding: 0 16px;
+        color: #94A3B8;
+        border: 1px solid #1E293B;
+        border-bottom: none;
+        white-space: nowrap;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #3B82F6 !important;
+        color: white !important;
+        font-weight: 600;
+        border-color: #3B82F6 !important;
+    }
+    
     /* Modern Setup Cards */
     .setup-card { 
         background-color: #131C2D; 
@@ -99,7 +121,7 @@ st.markdown("""
     .tech-box-row { display: flex; justify-content: space-between; font-size: 0.9rem; color: #CBD5E1; }
     .tech-box-highlight { color: #EF4444; font-weight: 700; font-size: 1rem; }
     
-    /* Journal Rows */
+    /* Log Rows */
     .journal-row { 
         background-color: #131C2D; 
         padding: 20px; 
@@ -141,6 +163,7 @@ st.markdown("""
         .journal-row { padding: 16px; }
         .stImage { width: 100% !important; }
         .main-title { font-size: 1.6rem !important; }
+        .stTabs [data-baseweb="tab"] { padding: 0 8px; font-size: 0.75rem; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -199,7 +222,7 @@ def get_upcoming_earnings():
 # ==========================================
 # HEADER
 # ==========================================
-st.markdown("<div class='main-title'>⚡ ALPHA TERMINAL <span>PRO</span></div>", unsafe_allow_html=True)
+st.markdown("<div class='main-title'>⚡ AGLO TRADER <span>TERMINAL</span></div>", unsafe_allow_html=True)
 
 pulse_data = get_market_pulse()
 if pulse_data:
@@ -209,9 +232,9 @@ if pulse_data:
         if t == "^VIX": color = "inverse" if data['change'] >= 0 else "normal"
         cols[i].metric(data['name'], f"${data['price']:.2f}", f"{data['change']:+.2f}%", delta_color=color)
 
-# --- SYNC BUTTON WITH FULL DATA WIPE ---
+# --- SYNC BUTTON ---
 st.write("") # Tiny spacer
-if st.button("🔄 Sync Channels (Fresh Fetch)", use_container_width=True, type="primary"):
+if st.button("🔄 Sync Channels", use_container_width=True, type="primary"):
     with st.spinner("Fetching latest setups and cleaning old data..."):
         for cat in ["breakouts", "trendlines", "fibonacci"]:
             folder = os.path.join("data", f"discord_{cat}")
@@ -281,7 +304,6 @@ def render_setup_tab(category_name, state_key):
                 vol_val = techs['VolRatio']
                 vol_icon = "🔥" if vol_val > 1.5 else "🧊" if vol_val < 0.8 else "📊"
                 
-                # HTML Dashboard snippet
                 st.markdown(f"""
                 <div class="tech-box">
                     <div class="tech-box-header">
@@ -307,7 +329,7 @@ def render_setup_tab(category_name, state_key):
                 ent = c1.number_input("Entry Price", value=float(p), key=f"e_{f}")
                 stop = c2.number_input("Stop Loss", value=float(sl), key=f"s_{f}")
                 
-                if st.button("📝 Log Trade to Journal", use_container_width=True, type="primary", key=f"l_{f}"):
+                if st.button("📝 Log Trade", use_container_width=True, type="primary", key=f"l_{f}"):
                     db.log_trade(user_ticker, ent, stop, "", full_path)
                     st.success("Successfully Logged!")
             else:
@@ -320,9 +342,9 @@ def render_setup_tab(category_name, state_key):
                 st.rerun()
 
 # ==========================================
-# TABS
+# TABS (Shortened for Mobile)
 # ==========================================
-t1, t2, t3, t4, t5 = st.tabs(["🚀 Breakouts", "📈 Trendlines", "📉 Fib", "📅 Earnings", "📓 Journal"])
+t1, t2, t3, t4, t5 = st.tabs(["🚀 Break", "📈 Trend", "📉 Fib", "📅 Earn", "📓 Log"])
 
 with t1: render_setup_tab("breakouts", "visible_count_breakouts")
 with t2: render_setup_tab("trendlines", "visible_count_trendlines")
@@ -349,14 +371,13 @@ with t4:
         st.info("No earnings reports found for major tickers.")
 
 with t5:
-    st.subheader("Interactive Trading Journal")
-    journal = db.get_journal_data()
-    if not journal.empty:
-        for _, row in journal.iterrows():
+    st.subheader("Interactive Trading Log")
+    log_data = db.get_journal_data()
+    if not log_data.empty:
+        for _, row in log_data.iterrows():
             st.markdown(f'<div class="journal-row">', unsafe_allow_html=True)
             risk = ((row['entry'] - row['atr_sl']) / row['entry']) * 100 if row['entry'] > 0 else 0
             
-            # Refined flexbox layout for journal entry info
             html_info = f"""
             <div style='display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 12px;'>
                 <div style='display: flex; align-items: center; gap: 12px;'>

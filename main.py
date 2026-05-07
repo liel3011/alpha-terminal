@@ -223,6 +223,17 @@ st.markdown("""
         color: #F8FAFC !important;
     }
 
+    .discord-msg-box {
+        background: linear-gradient(to right, rgba(88, 101, 242, 0.1), rgba(88, 101, 242, 0.05));
+        border-left: 4px solid #5865F2;
+        padding: 12px 16px;
+        border-radius: 0 8px 8px 0;
+        margin-bottom: 16px;
+        font-size: 0.95rem;
+        color: #E2E8F0;
+        line-height: 1.5;
+    }
+
     @media (max-width: 768px) {
         .setup-card { padding: 16px; }
         .journal-row { padding: 16px; }
@@ -313,6 +324,7 @@ def get_upcoming_earnings():
                     next_date = min(future_dates)
                     days_left = (next_date - datetime.now().date()).days
                     results.append({"Ticker": t, "Report Date": next_date.strftime('%Y-%m-%d'), "Days Left": days_left})
+            
             elif isinstance(cal, dict) and 'Earnings Date' in cal:
                 dates = cal['Earnings Date']
                 if not isinstance(dates, list): dates = [dates]
@@ -331,32 +343,58 @@ def render_stock_deep_dive(ticker, key_prefix):
         hist_df = yf.Ticker(ticker).history(period=timeframe)
         
         if not hist_df.empty:
-            st.line_chart(hist_df['Close'], height=250)
-            info = get_stock_info(ticker)
+            start_p = hist_df['Close'].iloc[0]
+            end_p = hist_df['Close'].iloc[-1]
+            diff = end_p - start_p
+            pct_diff = (diff / start_p) * 100
             
+            color = "#10B981" if diff >= 0 else "#EF4444"
+            sign = "+" if diff >= 0 else ""
+            
+            st.markdown(f"<div style='font-size: 1.8rem; font-weight: 800; margin-bottom: 4px; color: #F8FAFC;'>${end_p:.2f}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='color: {color}; font-size: 1rem; font-weight: 600; margin-bottom: 16px;'>{sign}{diff:.2f} ({sign}{pct_diff:.2f}%)</div>", unsafe_allow_html=True)
+            
+            st.line_chart(hist_df['Close'], height=220)
+            
+            info = get_stock_info(ticker)
             mcap = info.get('marketCap', 0)
-            mcap_str = f"${mcap / 1e9:.2f}B" if mcap else "N/A"
+            
+            def format_mcap(val):
+                if val >= 1e12: return f"${val/1e12:.2f}T"
+                if val >= 1e9: return f"${val/1e9:.2f}B"
+                if val >= 1e6: return f"${val/1e6:.2f}M"
+                return str(val)
+            
+            mcap_str = format_mcap(mcap) if mcap else "N/A"
             pe = info.get('trailingPE', 'N/A')
+            pe_str = f"{pe:.2f}" if isinstance(pe, float) else "N/A"
             high52 = info.get('fiftyTwoWeekHigh', 'N/A')
             low52 = info.get('fiftyTwoWeekLow', 'N/A')
             
-            mc1, mc2, mc3, mc4 = st.columns(4)
-            mc1.metric("Market Cap", mcap_str)
+            high52_str = f"${high52:.2f}" if high52 != 'N/A' else "N/A"
+            low52_str = f"${low52:.2f}" if low52 != 'N/A' else "N/A"
             
-            if isinstance(pe, float):
-                mc2.metric("P/E Ratio", f"{pe:.2f}")
-            else:
-                mc2.metric("P/E Ratio", "N/A")
-                
-            if high52 != 'N/A':
-                mc3.metric("52W High", f"${high52:.2f}")
-            else:
-                mc3.metric("52W High", "N/A")
-                
-            if low52 != 'N/A':
-                mc4.metric("52W Low", f"${low52:.2f}")
-            else:
-                mc4.metric("52W Low", "N/A")
+            st.markdown(f"""
+            <div style="display: flex; flex-wrap: wrap; gap: 15px; background: rgba(15, 23, 42, 0.4); padding: 16px; border-radius: 12px; border: 1px solid #1E293B; margin-top: 10px;">
+                <div style="flex: 1; min-width: 80px;">
+                    <span style="color:#94A3B8; font-size:0.75rem; text-transform:uppercase; font-weight:600;">Market Cap</span><br>
+                    <b style="font-size:1.1rem; color:#F8FAFC;">{mcap_str}</b>
+                </div>
+                <div style="flex: 1; min-width: 80px;">
+                    <span style="color:#94A3B8; font-size:0.75rem; text-transform:uppercase; font-weight:600;">P/E Ratio</span><br>
+                    <b style="font-size:1.1rem; color:#F8FAFC;">{pe_str}</b>
+                </div>
+                <div style="flex: 1; min-width: 80px;">
+                    <span style="color:#94A3B8; font-size:0.75rem; text-transform:uppercase; font-weight:600;">52W High</span><br>
+                    <b style="font-size:1.1rem; color:#F8FAFC;">{high52_str}</b>
+                </div>
+                <div style="flex: 1; min-width: 80px;">
+                    <span style="color:#94A3B8; font-size:0.75rem; text-transform:uppercase; font-weight:600;">52W Low</span><br>
+                    <b style="font-size:1.1rem; color:#F8FAFC;">{low52_str}</b>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
         else:
             st.warning("No historical data available for this ticker.")
     except Exception as e:
@@ -374,7 +412,7 @@ if pulse_data:
 
 st.write("") 
 if st.button("Sync Channels", use_container_width=True, type="primary"):
-    with st.spinner("Fetching..."):
+    with st.spinner("Fetching latest setups and cleaning old data..."):
         for cat in ["breakouts", "trendlines", "fibonacci"]:
             folder = os.path.join("data", f"discord_{cat}")
             if os.path.exists(folder):
@@ -389,7 +427,6 @@ st.divider()
 def render_setup_tab(category_name, state_key):
     atr_multiplier = st.number_input("Risk Multiplier (ATR)", 0.5, 5.0, 1.5, 0.5, key=f"atr_{category_name}")
     img_dir = os.path.join("data", f"discord_{category_name}")
-    
     if os.path.exists(img_dir):
         files = sorted([f for f in os.listdir(img_dir) if f.endswith('.png')], 
                        key=lambda x: int(''.join(filter(str.isdigit, x.split('_')[-1]))) if '_' in x else 0, 
@@ -437,7 +474,7 @@ def render_setup_tab(category_name, state_key):
                     pass
                     
             if discord_msg:
-                st.markdown(f"<div style='background: rgba(59, 130, 246, 0.1); border-left: 3px solid #3B82F6; padding: 10px; border-radius: 4px; margin-bottom: 12px; font-size: 0.9rem; color: #E2E8F0;'>💬 <i>{discord_msg}</i></div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='discord-msg-box'>💬 <i>{discord_msg}</i></div>", unsafe_allow_html=True)
             
             st.image(full_path, use_container_width=True)
             
@@ -505,6 +542,7 @@ main_tab1, main_tab2, main_tab3 = st.tabs(["📊 Scanners", "📅 Earn", "📓 L
 
 with main_tab1:
     t1, t2, t3 = st.tabs(["🚀 Break", "📈 Trend", "📉 Fib"])
+    
     with t1: render_setup_tab("breakouts", "visible_count_breakouts")
     with t2: render_setup_tab("trendlines", "visible_count_trendlines")
     with t3: render_setup_tab("fibonacci", "visible_count_fibonacci")
@@ -517,9 +555,15 @@ with main_tab2:
             elif val <= 7: color = '#F59E0B' 
             else: color = '#10B981' 
             return f'color: {color}; font-weight: 700;'
+
         df_display = df.copy()
         df_display.columns = ["Ticker", "📅 Report Date", "⏳ Days Left"]
-        st.dataframe(df_display.style.map(style_days, subset=['⏳ Days Left']), use_container_width=True, hide_index=True)
+        
+        st.dataframe(
+            df_display.style.map(style_days, subset=['⏳ Days Left']),
+            use_container_width=True,
+            hide_index=True
+        )
     else:
         st.info("No earnings reports found.")
 

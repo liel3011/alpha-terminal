@@ -234,6 +234,12 @@ st.markdown("""
         line-height: 1.5;
     }
 
+    /* Compress Radio Button Spacing for Timeframes */
+    .stRadio {
+        margin-top: -10px;
+        margin-bottom: -15px;
+    }
+
     @media (max-width: 768px) {
         .setup-card { padding: 16px; }
         .journal-row { padding: 16px; }
@@ -298,13 +304,6 @@ def get_technical_data(ticker):
         return {"price": price, "ATR": atr, "RSI": rsi, "VolRatio": vol_ratio}
     except: return None
 
-@st.cache_data(ttl=3600)
-def get_stock_info(ticker):
-    try:
-        return yf.Ticker(ticker).info
-    except:
-        return {}
-
 @st.cache_data(ttl=86400)
 def get_upcoming_earnings():
     major_tickers = ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA', 'NFLX', 'AMD', 'JPM', 'DIS']
@@ -339,64 +338,67 @@ def get_upcoming_earnings():
 def render_stock_deep_dive(ticker, key_prefix):
     if not ticker: return
     try:
-        timeframe = st.radio("Timeframe", ["5d", "1mo", "3mo", "6mo", "1y", "ytd"], horizontal=True, key=f"tf_radio_{key_prefix}")
-        hist_df = yf.Ticker(ticker).history(period=timeframe)
+        timeframe = st.radio("", ["5d", "1mo", "3mo", "6mo", "1y", "ytd"], horizontal=True, key=f"tf_{key_prefix}", label_visibility="collapsed")
+        
+        tkr = yf.Ticker(ticker)
+        hist_df = tkr.history(period=timeframe)
         
         if not hist_df.empty:
-            start_p = hist_df['Close'].iloc[0]
-            end_p = hist_df['Close'].iloc[-1]
-            diff = end_p - start_p
-            pct_diff = (diff / start_p) * 100
+            # Fetch real-time live data for accurate current price
+            live_data = tkr.history(period="1d", interval="1m")
+            if not live_data.empty:
+                current_price = live_data['Close'].iloc[-1]
+            else:
+                current_price = hist_df['Close'].iloc[-1]
+                
+            start_price = hist_df['Close'].iloc[0]
+            diff = current_price - start_price
+            pct_diff = (diff / start_price) * 100
             
             color = "#10B981" if diff >= 0 else "#EF4444"
             sign = "+" if diff >= 0 else ""
             
-            st.markdown(f"<div style='font-size: 1.8rem; font-weight: 800; margin-bottom: 4px; color: #F8FAFC;'>${end_p:.2f}</div>", unsafe_allow_html=True)
-            st.markdown(f"<div style='color: {color}; font-size: 1rem; font-weight: 600; margin-bottom: 16px;'>{sign}{diff:.2f} ({sign}{pct_diff:.2f}%)</div>", unsafe_allow_html=True)
+            # Ultra-compact live price header
+            st.markdown(f"""
+            <div style='margin-bottom: 10px; margin-top: 5px;'>
+                <span style='font-size: 2.2rem; font-weight: 800; color: #F8FAFC; letter-spacing: -1px;'>${current_price:.2f}</span>
+                <span style='color: {color}; font-size: 1.1rem; font-weight: 600; margin-left: 12px;'>
+                    {sign}{diff:.2f} ({sign}{pct_diff:.2f}%)
+                </span>
+            </div>
+            """, unsafe_allow_html=True)
             
-            st.line_chart(hist_df['Close'], height=220)
+            st.line_chart(hist_df['Close'], height=200)
             
-            info = get_stock_info(ticker)
+            info = tkr.info
             mcap = info.get('marketCap', 0)
+            pe = info.get('trailingPE', 'N/A')
+            high52 = info.get('fiftyTwoWeekHigh', 'N/A')
+            low52 = info.get('fiftyTwoWeekLow', 'N/A')
             
-            def format_mcap(val):
+            def format_num(val):
+                if val == 'N/A' or not val: return "N/A"
                 if val >= 1e12: return f"${val/1e12:.2f}T"
                 if val >= 1e9: return f"${val/1e9:.2f}B"
                 if val >= 1e6: return f"${val/1e6:.2f}M"
                 return str(val)
             
-            mcap_str = format_mcap(mcap) if mcap else "N/A"
-            pe = info.get('trailingPE', 'N/A')
-            pe_str = f"{pe:.2f}" if isinstance(pe, float) else "N/A"
-            high52 = info.get('fiftyTwoWeekHigh', 'N/A')
-            low52 = info.get('fiftyTwoWeekLow', 'N/A')
-            
+            pe_str = f"{pe:.2f}" if isinstance(pe, (int, float)) else "N/A"
             high52_str = f"${high52:.2f}" if high52 != 'N/A' else "N/A"
             low52_str = f"${low52:.2f}" if low52 != 'N/A' else "N/A"
             
+            # Clean 4-column metric grid
             st.markdown(f"""
-            <div style="display: flex; flex-wrap: wrap; gap: 15px; background: rgba(15, 23, 42, 0.4); padding: 16px; border-radius: 12px; border: 1px solid #1E293B; margin-top: 10px;">
-                <div style="flex: 1; min-width: 80px;">
-                    <span style="color:#94A3B8; font-size:0.75rem; text-transform:uppercase; font-weight:600;">Market Cap</span><br>
-                    <b style="font-size:1.1rem; color:#F8FAFC;">{mcap_str}</b>
-                </div>
-                <div style="flex: 1; min-width: 80px;">
-                    <span style="color:#94A3B8; font-size:0.75rem; text-transform:uppercase; font-weight:600;">P/E Ratio</span><br>
-                    <b style="font-size:1.1rem; color:#F8FAFC;">{pe_str}</b>
-                </div>
-                <div style="flex: 1; min-width: 80px;">
-                    <span style="color:#94A3B8; font-size:0.75rem; text-transform:uppercase; font-weight:600;">52W High</span><br>
-                    <b style="font-size:1.1rem; color:#F8FAFC;">{high52_str}</b>
-                </div>
-                <div style="flex: 1; min-width: 80px;">
-                    <span style="color:#94A3B8; font-size:0.75rem; text-transform:uppercase; font-weight:600;">52W Low</span><br>
-                    <b style="font-size:1.1rem; color:#F8FAFC;">{low52_str}</b>
-                </div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: rgba(15, 23, 42, 0.4); padding: 12px; border-radius: 8px; border: 1px solid #1E293B;">
+                <div><div style="color:#64748B; font-size:0.65rem; font-weight:700;">MKT CAP</div><div style="font-size:0.9rem; font-weight:600; color:#E2E8F0;">{format_num(mcap)}</div></div>
+                <div><div style="color:#64748B; font-size:0.65rem; font-weight:700;">P/E</div><div style="font-size:0.9rem; font-weight:600; color:#E2E8F0;">{pe_str}</div></div>
+                <div><div style="color:#64748B; font-size:0.65rem; font-weight:700;">52W HIGH</div><div style="font-size:0.9rem; font-weight:600; color:#E2E8F0;">{high52_str}</div></div>
+                <div><div style="color:#64748B; font-size:0.65rem; font-weight:700;">52W LOW</div><div style="font-size:0.9rem; font-weight:600; color:#E2E8F0;">{low52_str}</div></div>
             </div>
             """, unsafe_allow_html=True)
             
         else:
-            st.warning("No historical data available for this ticker.")
+            st.warning("No historical data available for this timeframe.")
     except Exception as e:
         st.caption("Detailed chart unavailable at the moment.")
 

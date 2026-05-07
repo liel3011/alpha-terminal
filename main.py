@@ -365,32 +365,85 @@ def get_upcoming_earnings():
                 next_date = min(future_dates)
                 days_left = (next_date - datetime.now().date()).days
                 
+                sentiment = "-"
+                
                 if days_left <= 21:
-                    sentiment = "⚪ Neutral"
+                    score = 50 
                     try:
                         info = tkr.info
-                        rec = str(info.get('recommendationKey', '')).lower()
+                        
                         curr_p = info.get('currentPrice') or info.get('previousClose') or 0
                         targ_p = info.get('targetMeanPrice', 0)
-                        
                         if curr_p > 0 and targ_p > 0:
                             upside = ((targ_p - curr_p) / curr_p) * 100
-                            if 'buy' in rec and upside > 5:
-                                sentiment = f"🟢 Bullish (+{upside:.1f}%)"
-                            elif 'buy' in rec and upside > 0:
-                                sentiment = f"🟡 Lean Bull (+{upside:.1f}%)"
-                            elif 'sell' in rec or 'underperform' in rec or upside < -5:
-                                sentiment = f"🔴 Bearish ({upside:.1f}%)"
-                            else:
-                                sentiment = f"⚪ Neutral ({upside:.1f}%)"
-                    except: pass
+                            if upside > 15: score += 15
+                            elif upside > 5: score += 10
+                            elif upside < -5: score -= 15
+                            elif upside < -15: score -= 20
+
+                        try:
+                            ed = tkr.earnings_dates
+                            if ed is not None and not ed.empty and 'Surprise(%)' in ed.columns:
+                                past_ed = ed[ed.index < pd.Timestamp.now(tz='UTC')].head(4)
+                                if not past_ed.empty:
+                                    avg_surp = past_ed['Surprise(%)'].mean()
+                                    if avg_surp > 0.10: score += 15
+                                    elif avg_surp > 0.03: score += 10
+                                    elif avg_surp < -0.01: score -= 15
+                        except: pass
+
+                        ma50 = info.get('fiftyDayAverage', 0)
+                        if curr_p > 0 and ma50 > 0:
+                            if curr_p > ma50: score += 5
+                            else: score -= 5
+                            
+                        short_pct = info.get('shortPercentOfFloat', 0)
+                        if short_pct and short_pct > 0.05:
+                            score += 5
+
+                        try:
+                            exps = tkr.options
+                            if exps:
+                                opt = tkr.option_chain(exps[0])
+                                calls_oi = opt.calls['openInterest'].sum() if 'openInterest' in opt.calls else 0
+                                puts_oi = opt.puts['openInterest'].sum() if 'openInterest' in opt.puts else 0
+                                if calls_oi > 0:
+                                    pc_ratio = puts_oi / calls_oi
+                                    if pc_ratio > 1.2: score -= 15
+                                    elif pc_ratio > 1.0: score -= 5
+                                    elif pc_ratio < 0.6: score += 15
+                                    elif pc_ratio < 0.8: score += 5
+                        except: pass
+
+                        try:
+                            insiders = tkr.insider_transactions
+                            if insiders is not None and not insiders.empty:
+                                if 'Shares' in insiders.columns:
+                                    net_shares = insiders.head(15)['Shares'].sum()
+                                    if net_shares > 0: score += 10
+                                    elif net_shares < 0: score -= 10
+                        except: pass
+
+                        score = max(0, min(100, int(score)))
+
+                        if score >= 75:
+                            sentiment = f"🔥 High Beat Prob ({score}%)"
+                        elif score >= 60:
+                            sentiment = f"🟢 Likely Beat ({score}%)"
+                        elif score >= 40:
+                            sentiment = f"⚪ Mixed ({score}%)"
+                        else:
+                            sentiment = f"🔴 High Miss Risk ({score}%)"
+
+                    except:
+                        sentiment = "⚪ Neutral (Data missing)"
                     
-                    results.append({
-                        "Ticker": t, 
-                        "Report Date": next_date.strftime('%Y-%m-%d'), 
-                        "Days Left": days_left,
-                        "Forecast": sentiment
-                    })
+                results.append({
+                    "Ticker": t, 
+                    "Report Date": next_date.strftime('%Y-%m-%d'), 
+                    "Days Left": days_left,
+                    "Prediction": sentiment
+                })
         except: pass
     return pd.DataFrame(results).sort_values(by="Days Left") if results else pd.DataFrame()
 
@@ -632,7 +685,7 @@ with main_tab2:
             return f'color: {color}; font-weight: 700;'
 
         df_display = df.copy()
-        df_display.columns = ["Ticker", "📅 Report Date", "⏳ Days Left", "🎯 Forecast"]
+        df_display.columns = ["Ticker", "📅 Report Date", "⏳ Days Left", "📊 Prediction"]
         
         st.dataframe(
             df_display.style.map(style_days, subset=['⏳ Days Left']),
@@ -640,7 +693,7 @@ with main_tab2:
             hide_index=True
         )
     else:
-        st.info("No upcoming earnings found for the next 3 weeks.")
+        st.info("No upcoming earnings found.")
 
 with main_tab3:
     show_manual = st.toggle("➕ Add Manual Trade")

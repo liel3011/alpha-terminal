@@ -65,10 +65,14 @@ class DiscordListener:
                     full_text += f"\n{field.get('name', '')}: {field.get('value', '')}"
                     
             full_text = full_text.strip()
+            
+            # Fallback text to guarantee a file is always created for debugging
+            if not full_text:
+                full_text = "No additional text provided in Discord."
 
             # 1. Smart Ticker Extraction from text
             ticker = "SETUP"
-            if full_text:
+            if full_text and full_text != "No additional text provided in Discord.":
                 match = re.search(r'\b[A-Z]{2,5}\b', full_text)
                 if match:
                     ticker = match.group(0)
@@ -95,12 +99,11 @@ class DiscordListener:
                     self._download_image(img_url, img_filepath)
                     
                     # Save the compiled message text into a .txt file
-                    if full_text:
-                        try:
-                            with open(txt_filepath, "w", encoding="utf-8") as txt_file:
-                                txt_file.write(full_text)
-                        except Exception as e:
-                            logging.error(f"Failed to save message text for {current_ticker}: {e}")
+                    try:
+                        with open(txt_filepath, "w", encoding="utf-8") as txt_file:
+                            txt_file.write(full_text)
+                    except Exception as e:
+                        logging.error(f"Failed to save message text for {current_ticker}: {e}")
 
             # A. Process Direct Attachments
             for attachment in msg.get('attachments', []):

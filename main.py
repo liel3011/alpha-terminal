@@ -1,5 +1,6 @@
 import os
 import time
+import sqlite3
 import streamlit as st
 import pandas as pd
 import yfinance as yf
@@ -334,7 +335,7 @@ def get_stock_info(ticker):
     except:
         return {}
 
-@st.cache_data(ttl=86400)
+@st.cache_data(ttl=3600)
 def get_upcoming_earnings():
     major_tickers = [
         'AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA', 'NFLX', 'AMD', 'JPM', 'DIS',
@@ -344,28 +345,52 @@ def get_upcoming_earnings():
     results = []
     for t in major_tickers:
         try:
-            cal = yf.Ticker(t).calendar
+            tkr = yf.Ticker(t)
+            cal = tkr.calendar
+            dates = []
+            
             if isinstance(cal, pd.DataFrame) and not cal.empty:
                 if 'Earnings Date' in cal.columns:
                     dates = pd.to_datetime(cal['Earnings Date']).dt.date.tolist()
                 elif isinstance(cal.index, pd.DatetimeIndex):
                     dates = cal.index.date.tolist()
-                else:
-                    dates = []
-                future_dates = [d for d in dates if d >= datetime.now().date()]
-                if future_dates:
-                    next_date = min(future_dates)
-                    days_left = (next_date - datetime.now().date()).days
-                    results.append({"Ticker": t, "Report Date": next_date.strftime('%Y-%m-%d'), "Days Left": days_left})
-            
             elif isinstance(cal, dict) and 'Earnings Date' in cal:
-                dates = cal['Earnings Date']
-                if not isinstance(dates, list): dates = [dates]
-                future_dates = [pd.to_datetime(d).date() for d in dates if pd.to_datetime(d).date() >= datetime.now().date()]
-                if future_dates:
-                    next_date = min(future_dates)
-                    days_left = (next_date - datetime.now().date()).days
-                    results.append({"Ticker": t, "Report Date": next_date.strftime('%Y-%m-%d'), "Days Left": days_left})
+                raw_dates = cal['Earnings Date']
+                if not isinstance(raw_dates, list): raw_dates = [raw_dates]
+                dates = [pd.to_datetime(d).date() for d in raw_dates]
+                
+            future_dates = [d for d in dates if d >= datetime.now().date()]
+            
+            if future_dates:
+                next_date = min(future_dates)
+                days_left = (next_date - datetime.now().date()).days
+                
+                if days_left <= 21:
+                    sentiment = "⚪ Neutral"
+                    try:
+                        info = tkr.info
+                        rec = str(info.get('recommendationKey', '')).lower()
+                        curr_p = info.get('currentPrice') or info.get('previousClose') or 0
+                        targ_p = info.get('targetMeanPrice', 0)
+                        
+                        if curr_p > 0 and targ_p > 0:
+                            upside = ((targ_p - curr_p) / curr_p) * 100
+                            if 'buy' in rec and upside > 5:
+                                sentiment = f"🟢 Bullish (+{upside:.1f}%)"
+                            elif 'buy' in rec and upside > 0:
+                                sentiment = f"🟡 Lean Bull (+{upside:.1f}%)"
+                            elif 'sell' in rec or 'underperform' in rec or upside < -5:
+                                sentiment = f"🔴 Bearish ({upside:.1f}%)"
+                            else:
+                                sentiment = f"⚪ Neutral ({upside:.1f}%)"
+                    except: pass
+                    
+                    results.append({
+                        "Ticker": t, 
+                        "Report Date": next_date.strftime('%Y-%m-%d'), 
+                        "Days Left": days_left,
+                        "Forecast": sentiment
+                    })
         except: pass
     return pd.DataFrame(results).sort_values(by="Days Left") if results else pd.DataFrame()
 
@@ -607,7 +632,7 @@ with main_tab2:
             return f'color: {color}; font-weight: 700;'
 
         df_display = df.copy()
-        df_display.columns = ["Ticker", "📅 Report Date", "⏳ Days Left"]
+        df_display.columns = ["Ticker", "📅 Report Date", "⏳ Days Left", "🎯 Forecast"]
         
         st.dataframe(
             df_display.style.map(style_days, subset=['⏳ Days Left']),
@@ -615,7 +640,7 @@ with main_tab2:
             hide_index=True
         )
     else:
-        st.info("No earnings reports found.")
+        st.info("No upcoming earnings found for the next 3 weeks.")
 
 with main_tab3:
     show_manual = st.toggle("➕ Add Manual Trade")

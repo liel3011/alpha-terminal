@@ -248,6 +248,7 @@ st.markdown("""
         background-color: #18181B !important;
         border: 1px solid #27272A !important;
         border-radius: 8px !important;
+        margin-top: 8px;
     }
     
     div[data-testid="stExpander"] summary {
@@ -424,9 +425,9 @@ def render_stock_deep_dive(ticker, key_prefix):
             sign = "+" if diff >= 0 else ""
             
             st.markdown(f"""
-            <div style='margin-bottom: 12px; margin-top: 4px;'>
-                <span style='font-size: 2rem; font-weight: 800; color: #FAFAFA; letter-spacing: -1px;'>${current_price:.2f}</span>
-                <span style='color: {color}; font-size: 1rem; font-weight: 600; margin-left: 10px;'>
+            <div style='margin-bottom: 15px; margin-top: 5px;'>
+                <span style='font-size: 2.2rem; font-weight: 800; color: #FAFAFA; letter-spacing: -1px;'>${current_price:.2f}</span>
+                <span style='color: {color}; font-size: 1.1rem; font-weight: 600; margin-left: 12px;'>
                     {sign}{diff:.2f} ({sign}{pct_diff:.2f}%)
                 </span>
             </div>
@@ -449,11 +450,11 @@ def render_stock_deep_dive(ticker, key_prefix):
             low52_str = f"${low52:.2f}" if low52 != 'N/A' else "N/A"
             
             st.markdown(f"""
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; background: #09090B; padding: 10px; border-radius: 8px; border: 1px solid #27272A;">
-                <div><div style="color:#71717A; font-size:0.65rem; font-weight:700;">MKT CAP</div><div style="font-size:0.85rem; font-weight:600; color:#E4E4E7;">{format_num(mcap)}</div></div>
-                <div><div style="color:#71717A; font-size:0.65rem; font-weight:700;">P/E</div><div style="font-size:0.85rem; font-weight:600; color:#E4E4E7;">{pe_str}</div></div>
-                <div><div style="color:#71717A; font-size:0.65rem; font-weight:700;">52W HIGH</div><div style="font-size:0.85rem; font-weight:600; color:#E4E4E7;">{high52_str}</div></div>
-                <div><div style="color:#71717A; font-size:0.65rem; font-weight:700;">52W LOW</div><div style="font-size:0.85rem; font-weight:600; color:#E4E4E7;">{low52_str}</div></div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: rgba(15, 23, 42, 0.4); padding: 12px; border-radius: 8px; border: 1px solid #1E293B;">
+                <div><div style="color:#64748B; font-size:0.65rem; font-weight:700;">MKT CAP</div><div style="font-size:0.9rem; font-weight:600; color:#E2E8F0;">{format_num(mcap)}</div></div>
+                <div><div style="color:#64748B; font-size:0.65rem; font-weight:700;">P/E</div><div style="font-size:0.9rem; font-weight:600; color:#E2E8F0;">{pe_str}</div></div>
+                <div><div style="color:#64748B; font-size:0.65rem; font-weight:700;">52W HIGH</div><div style="font-size:0.9rem; font-weight:600; color:#E2E8F0;">{high52_str}</div></div>
+                <div><div style="color:#64748B; font-size:0.65rem; font-weight:700;">52W LOW</div><div style="font-size:0.9rem; font-weight:600; color:#E2E8F0;">{low52_str}</div></div>
             </div>
             """, unsafe_allow_html=True)
             
@@ -577,23 +578,24 @@ def render_setup_tab(category_name, state_key):
                 with st.expander("📊 Advanced Data"):
                     render_stock_deep_dive(user_ticker, f"card_{f}")
                 
-                c1, c2 = st.columns([1, 1])
-                ent = c1.number_input("Entry Price", value=float(p), key=f"e_{f}")
-                qty = c2.number_input("Quantity", min_value=1.0, value=10.0, step=1.0, key=f"q_{f}")
-                
-                sl_type = st.radio("Stop Loss Type", ["Percentage (%)", "Price ($)"], horizontal=True, key=f"sl_type_{f}")
-                
-                if sl_type == "Percentage (%)":
-                    sl_pct = st.number_input("Stop Loss (%)", min_value=0.1, max_value=99.0, value=float(f"{risk_base:.1f}"), step=0.5, key=f"sl_pct_{f}")
-                    stop = ent * (1 - (sl_pct / 100))
-                    st.caption(f"Calculated SL Price: ${stop:.2f}")
-                else:
-                    stop = st.number_input("Stop Loss ($)", value=float(sl_base), key=f"s_{f}")
-                
-                if st.button("📝 Log Trade", use_container_width=True, type="primary", key=f"l_{f}"):
-                    note_str = f"QTY:{qty}|"
-                    db.log_trade(user_ticker, ent, stop, note_str, full_path)
-                    st.success("Successfully Logged!")
+                with st.expander("⚙️ Execute Trade Configuration"):
+                    c1, c2 = st.columns([1, 1])
+                    ent = c1.number_input("Entry Price", value=float(p), key=f"e_{f}")
+                    qty = c2.number_input("Quantity", min_value=1.0, value=10.0, step=1.0, key=f"q_{f}")
+                    
+                    sl_type = st.radio("Stop Loss Type", ["Percentage (%)", "Price ($)"], horizontal=True, key=f"sl_type_{f}")
+                    
+                    if sl_type == "Percentage (%)":
+                        sl_pct = st.number_input("Stop Loss (%)", min_value=0.1, max_value=99.0, value=float(f"{risk_base:.1f}"), step=0.5, key=f"sl_pct_{f}")
+                        stop = ent * (1 - (sl_pct / 100))
+                        st.caption(f"Calculated SL Price: ${stop:.2f}")
+                    else:
+                        stop = st.number_input("Stop Loss ($)", value=float(sl_base), key=f"s_{f}")
+                    
+                    if st.button("📝 Log Trade", use_container_width=True, type="primary", key=f"l_{f}"):
+                        note_str = f"QTY:{qty}|"
+                        db.log_trade(user_ticker, ent, stop, note_str, full_path)
+                        st.success("Successfully Logged!")
             else:
                 st.caption("Waiting for valid ticker symbol...")
             st.markdown('</div>', unsafe_allow_html=True)
@@ -633,7 +635,8 @@ with main_tab2:
         st.info("No earnings reports found.")
 
 with main_tab3:
-    with st.expander("➕ Add Manual Trade"):
+    show_manual = st.toggle("➕ Add Manual Trade")
+    if show_manual:
         c_tick, c_atr = st.columns([2, 1])
         man_ticker = c_tick.text_input("Enter Ticker Symbol:", key="man_ticker", placeholder="e.g. AAPL...").upper().strip()
         man_atr_mult = c_atr.number_input("Risk Multiplier (ATR)", 0.5, 5.0, 1.5, 0.5, key="man_atr_mult")
@@ -664,7 +667,7 @@ with main_tab3:
                         <span>{vol_icon} Volume</span>
                         <span>{vol_val:.1f}x</span>
                     </div>
-                    <div class="tech-box-row" style="margin-top: 4px; border-top: 1px solid #27272A; padding-top: 6px;">
+                    <div class="tech-box-row" style="margin-top: 6px; border-top: 1px solid #27272A; padding-top: 6px;">
                         <span>Target SL</span>
                         <span class="tech-box-highlight">${man_sl_base:.2f} (-{man_risk_base:.1f}%)</span>
                     </div>
@@ -674,23 +677,24 @@ with main_tab3:
                 with st.expander("📊 Advanced Data"):
                     render_stock_deep_dive(man_ticker, "man_dd")
                 
-                mc1, mc2 = st.columns([1, 1])
-                man_ent = mc1.number_input("Entry Price", value=float(man_p), key="man_e")
-                man_qty = mc2.number_input("Quantity", min_value=1.0, value=10.0, step=1.0, key="man_q")
-                
-                sl_type = st.radio("Stop Loss Type", ["Percentage (%)", "Price ($)"], horizontal=True, key="man_sl_type")
-                
-                if sl_type == "Percentage (%)":
-                    man_sl_pct = st.number_input("Stop Loss (%)", min_value=0.1, max_value=99.0, value=float(f"{man_risk_base:.1f}"), step=0.5, key="man_sl_pct")
-                    man_stop = man_ent * (1 - (man_sl_pct / 100))
-                    st.caption(f"Calculated SL Price: ${man_stop:.2f}")
-                else:
-                    man_stop = st.number_input("Stop Loss ($)", value=float(man_sl_base), key="man_s")
-                
-                if st.button("📝 Log Manual Trade", use_container_width=True, type="primary", key="man_log_btn"):
-                    note_str = f"QTY:{man_qty}|"
-                    db.log_trade(man_ticker, man_ent, man_stop, note_str, "")
-                    st.rerun()
+                with st.expander("⚙️ Execute Trade Configuration"):
+                    mc1, mc2 = st.columns([1, 1])
+                    man_ent = mc1.number_input("Entry Price", value=float(man_p), key="man_e")
+                    man_qty = mc2.number_input("Quantity", min_value=1.0, value=10.0, step=1.0, key="man_q")
+                    
+                    sl_type = st.radio("Stop Loss Type", ["Percentage (%)", "Price ($)"], horizontal=True, key="man_sl_type")
+                    
+                    if sl_type == "Percentage (%)":
+                        man_sl_pct = st.number_input("Stop Loss (%)", min_value=0.1, max_value=99.0, value=float(f"{man_risk_base:.1f}"), step=0.5, key="man_sl_pct")
+                        man_stop = man_ent * (1 - (man_sl_pct / 100))
+                        st.caption(f"Calculated SL Price: ${man_stop:.2f}")
+                    else:
+                        man_stop = st.number_input("Stop Loss ($)", value=float(man_sl_base), key="man_s")
+                    
+                    if st.button("📝 Log Manual Trade", use_container_width=True, type="primary", key="man_log_btn"):
+                        note_str = f"QTY:{man_qty}|"
+                        db.log_trade(man_ticker, man_ent, man_stop, note_str, "")
+                        st.rerun()
             else:
                 st.caption("Waiting for valid ticker symbol...")
 

@@ -50,7 +50,7 @@ st.markdown("""
     
     .main-title {
         color: #FFFFFF; 
-        margin-bottom: 24px; 
+        margin-bottom: 16px; 
         font-weight: 800; 
         font-size: 2rem !important; 
         letter-spacing: -0.5px;
@@ -66,28 +66,6 @@ st.markdown("""
         background: rgba(59,130,246,0.15); 
         padding: 4px 12px; 
         border-radius: 6px; 
-    }
-
-    [data-testid="metric-container"] {
-        background-color: #18181B;
-        border: 1px solid #27272A;
-        padding: 16px !important; 
-        border-radius: 12px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    }
-    
-    div[data-testid="stMetricValue"] { 
-        font-size: 1.4rem !important; 
-        font-weight: 700; 
-        color: #10B981; 
-    }
-    
-    div[data-testid="stMetricLabel"] { 
-        font-size: 0.75rem !important; 
-        color: #A1A1AA; 
-        text-transform: uppercase; 
-        letter-spacing: 0.5px; 
-        font-weight: 600;
     }
     
     .stTabs [data-baseweb="tab-list"] {
@@ -467,13 +445,26 @@ st.markdown("<div class='main-title'>🪙 Aglo Trader <span>Terminal</span></div
 
 pulse_data = get_market_pulse()
 if pulse_data:
-    cols = st.columns(len(pulse_data))
-    for i, (t, data) in enumerate(pulse_data.items()):
-        color = "normal" if data['change'] >= 0 else "inverse"
-        if t == "^VIX": color = "inverse" if data['change'] >= 0 else "normal"
-        cols[i].metric(data['name'], f"${data['price']:.2f}", f"{data['change']:+.2f}%", delta_color=color)
+    pulse_html = "<div style='display: flex; justify-content: space-between; gap: 12px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 4px;'>"
+    for t, data in pulse_data.items():
+        is_positive = data['change'] >= 0
+        if t == "^VIX":
+            color = "#EF4444" if is_positive else "#10B981"
+        else:
+            color = "#10B981" if is_positive else "#EF4444"
+        
+        sign = "+" if data['change'] >= 0 else ""
+        
+        pulse_html += f"""
+        <div style='flex: 1; min-width: 100px; background-color: #18181B; border: 1px solid #27272A; border-radius: 12px; padding: 12px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.15);'>
+            <div style='color: #A1A1AA; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;'>{data['name']}</div>
+            <div style='color: #FAFAFA; font-size: 1.15rem; font-weight: 800; margin: 4px 0;'>${data['price']:.2f}</div>
+            <div style='color: {color}; font-size: 0.8rem; font-weight: 600;'>{sign}{data['change']:.2f}%</div>
+        </div>
+        """
+    pulse_html += "</div>"
+    st.markdown(pulse_html, unsafe_allow_html=True)
 
-st.write("") 
 if st.button("Sync Channels", use_container_width=True, type="primary"):
     with st.spinner("Fetching latest setups and cleaning old data..."):
         for cat in ["breakouts", "trendlines", "fibonacci"]:
@@ -667,7 +658,7 @@ with main_tab3:
                         <span>{vol_icon} Volume</span>
                         <span>{vol_val:.1f}x</span>
                     </div>
-                    <div class="tech-box-row" style="margin-top: 6px; border-top: 1px solid #27272A; padding-top: 6px;">
+                    <div class="tech-box-row" style="margin-top: 4px; border-top: 1px solid #27272A; padding-top: 6px;">
                         <span>Target SL</span>
                         <span class="tech-box-highlight">${man_sl_base:.2f} (-{man_risk_base:.1f}%)</span>
                     </div>

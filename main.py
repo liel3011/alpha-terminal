@@ -34,15 +34,15 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     
     .stApp { 
-        background-color: #07090E; 
-        color: #F1F5F9; 
+        background-color: #09090B; 
+        color: #FAFAFA; 
         font-family: 'Inter', sans-serif;
     }
     
     .block-container {
-        padding-top: 2rem !important;
+        padding-top: 1.5rem !important;
         padding-bottom: 2rem !important;
-        max-width: 1400px;
+        max-width: 1200px;
     }
     
     header[data-testid="stHeader"], footer { display: none !important; }
@@ -50,10 +50,10 @@ st.markdown("""
     
     .main-title {
         color: #FFFFFF; 
-        margin-bottom: 20px; 
+        margin-bottom: 24px; 
         font-weight: 800; 
-        font-size: 2.2rem !important; 
-        letter-spacing: -1px;
+        font-size: 2rem !important; 
+        letter-spacing: -0.5px;
         display: flex;
         align-items: center;
         gap: 10px;
@@ -61,176 +61,197 @@ st.markdown("""
     
     .main-title span { 
         color: #3B82F6; 
-        font-size: 1.2rem; 
+        font-size: 1.1rem; 
         font-weight: 600; 
-        background: rgba(59,130,246,0.1); 
-        padding: 4px 10px; 
-        border-radius: 8px; 
+        background: rgba(59,130,246,0.15); 
+        padding: 4px 12px; 
+        border-radius: 6px; 
     }
 
     [data-testid="metric-container"] {
-        background: linear-gradient(145deg, #131C2D, #0B101A);
-        border: 1px solid #1E293B;
-        padding: 12px 16px !important; 
+        background-color: #18181B;
+        border: 1px solid #27272A;
+        padding: 16px !important; 
         border-radius: 12px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     }
     
     div[data-testid="stMetricValue"] { 
-        font-size: 1.2rem !important; 
+        font-size: 1.4rem !important; 
         font-weight: 700; 
         color: #10B981; 
     }
     
     div[data-testid="stMetricLabel"] { 
-        font-size: 0.8rem !important; 
-        color: #94A3B8; 
+        font-size: 0.75rem !important; 
+        color: #A1A1AA; 
         text-transform: uppercase; 
         letter-spacing: 0.5px; 
+        font-weight: 600;
     }
     
     .stTabs [data-baseweb="tab-list"] {
-        gap: 6px;
+        gap: 8px;
         background-color: transparent;
+        border-bottom: 1px solid #27272A;
+        padding-bottom: 0;
     }
     
     .stTabs [data-baseweb="tab"] {
-        height: 45px;
-        background-color: #131C2D;
-        border-radius: 8px 8px 0 0;
+        height: 40px;
+        background-color: transparent;
+        border-radius: 0;
         padding: 0 16px;
-        color: #94A3B8;
-        border: 1px solid #1E293B;
-        border-bottom: none;
+        color: #A1A1AA;
+        border: none;
+        border-bottom: 2px solid transparent;
         white-space: nowrap;
+        font-weight: 500;
     }
     
     .stTabs [aria-selected="true"] {
-        background-color: #3B82F6 !important;
-        color: white !important;
+        background-color: transparent !important;
+        color: #FAFAFA !important;
         font-weight: 600;
-        border-color: #3B82F6 !important;
+        border-bottom: 2px solid #3B82F6 !important;
     }
     
     .stTabs .stTabs [data-baseweb="tab-list"] {
-        gap: 4px;
+        gap: 6px;
+        border-bottom: none;
+        margin-top: 10px;
+        margin-bottom: 10px;
     }
     
     .stTabs .stTabs [data-baseweb="tab"] {
         height: 32px;
-        padding: 0 12px;
+        padding: 0 14px;
         font-size: 0.85rem;
-        background-color: #0F172A;
-        border-radius: 6px 6px 0 0;
+        background-color: #18181B;
+        border-radius: 16px;
+        border: 1px solid #27272A;
     }
     
     .stTabs .stTabs [aria-selected="true"] {
         background-color: #2563EB !important;
+        border-color: #2563EB !important;
+        color: #FFFFFF !important;
     }
     
     .setup-card { 
-        background-color: #131C2D; 
-        padding: 24px; 
-        border-radius: 16px; 
-        margin-bottom: 24px; 
-        border: 1px solid #1E293B;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
-        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-    }
-    
-    .setup-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.6);
-        border-color: #334155;
+        background-color: #18181B; 
+        padding: 20px; 
+        border-radius: 12px; 
+        margin-bottom: 20px; 
+        border: 1px solid #27272A;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
     
     .tech-box { 
-        background: rgba(15, 23, 42, 0.6);
-        padding: 16px; 
-        border-radius: 12px; 
-        margin: 16px 0; 
-        border: 1px solid #1E293B;
-        border-left: 4px solid #3B82F6; 
+        background-color: #09090B;
+        padding: 14px; 
+        border-radius: 8px; 
+        margin: 14px 0; 
+        border: 1px solid #27272A;
+        border-left: 3px solid #3B82F6; 
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 6px;
     }
     
     .tech-box-header { 
-        font-size: 1.1rem; 
+        font-size: 1.05rem; 
         font-weight: 700; 
-        color: #F8FAFC; 
+        color: #FAFAFA; 
         display: flex; 
         justify-content: space-between; 
-        border-bottom: 1px solid #1E293B; 
-        padding-bottom: 8px; 
-        margin-bottom: 4px; 
+        border-bottom: 1px solid #27272A; 
+        padding-bottom: 6px; 
+        margin-bottom: 2px; 
     }
     
     .tech-box-row { 
         display: flex; 
         justify-content: space-between; 
-        font-size: 0.9rem; 
-        color: #CBD5E1; 
+        font-size: 0.85rem; 
+        color: #A1A1AA; 
     }
     
     .tech-box-highlight { 
         color: #EF4444; 
-        font-weight: 700; 
-        font-size: 1rem; 
+        font-weight: 600; 
     }
     
     .journal-row { 
-        background-color: #131C2D; 
-        padding: 20px; 
+        background-color: #18181B; 
+        padding: 16px 20px; 
         border-radius: 12px; 
         margin-bottom: 12px; 
-        border: 1px solid #1E293B; 
-        transition: background-color 0.2s ease;
-    }
-    
-    .journal-row:hover { 
-        background-color: #1A263D; 
-        border-color: #334155; 
+        border: 1px solid #27272A; 
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     
     .stButton > button {
-        border-radius: 10px !important;
+        border-radius: 8px !important;
         font-weight: 600 !important;
-        transition: all 0.2s ease !important;
+        border: 1px solid #3F3F46 !important;
+        background-color: #18181B !important;
+        color: #FAFAFA !important;
+        transition: all 0.15s ease !important;
     }
     
     .stButton > button[kind="primary"] {
-        background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
-        border: none !important;
+        background-color: #2563EB !important;
+        border: 1px solid #2563EB !important;
+        color: #FFFFFF !important;
+    }
+    
+    .stButton > button:hover {
+        border-color: #52525B !important;
     }
     
     .stButton > button[kind="primary"]:hover {
-        background: linear-gradient(135deg, #3B82F6, #2563EB) !important;
-        box-shadow: 0 0 15px rgba(59, 130, 246, 0.4) !important;
-        transform: translateY(-1px);
+        background-color: #1D4ED8 !important;
+        border-color: #1D4ED8 !important;
     }
     
     .stImage img { 
-        border-radius: 10px; 
-        border: 1px solid #1E293B; 
+        border-radius: 8px; 
+        border: 1px solid #27272A; 
     }
 
     .stTextInput>div>div>input, .stNumberInput>div>div>input {
-        background-color: #0F172A !important;
-        border-radius: 8px !important;
-        color: #F8FAFC !important;
+        background-color: #09090B !important;
+        border-radius: 6px !important;
+        color: #FAFAFA !important;
+        border: 1px solid #27272A !important;
+        padding: 8px 12px !important;
+    }
+    
+    .stTextInput>div>div>input:focus, .stNumberInput>div>div>input:focus {
+        border-color: #3B82F6 !important;
+        box-shadow: none !important;
     }
 
     .discord-msg-box {
-        background: linear-gradient(to right, rgba(88, 101, 242, 0.1), rgba(88, 101, 242, 0.05));
-        border-left: 4px solid #5865F2;
-        padding: 12px 16px;
-        border-radius: 0 8px 8px 0;
-        margin-bottom: 16px;
-        font-size: 0.95rem;
-        color: #E2E8F0;
-        line-height: 1.5;
+        background-color: rgba(39, 39, 42, 0.4);
+        border-left: 3px solid #52525B;
+        padding: 10px 14px;
+        border-radius: 0 6px 6px 0;
+        margin-bottom: 14px;
+        font-size: 0.85rem;
+        color: #D4D4D8;
+        line-height: 1.4;
+    }
+
+    div[data-testid="stExpander"] {
+        background-color: #18181B !important;
+        border: 1px solid #27272A !important;
+        border-radius: 8px !important;
+    }
+    
+    div[data-testid="stExpander"] summary {
+        background-color: transparent !important;
     }
 
     div[role="radiogroup"] {
@@ -248,36 +269,46 @@ st.markdown("""
     div[role="radiogroup"] label p {
         white-space: nowrap !important;
         margin: 0 !important;
+        font-size: 0.85rem;
+        color: #A1A1AA;
     }
     div[role="radiogroup"]::-webkit-scrollbar {
         height: 0px; 
         background: transparent;
     }
+    
+    .data-pill {
+        background-color: #27272A;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        color: #E4E4E7;
+        display: inline-flex;
+        align-items: center;
+    }
+    .data-pill b {
+        color: #FAFAFA;
+        margin-left: 4px;
+    }
 
     @media (max-width: 768px) {
-        .setup-card { padding: 16px; }
-        .journal-row { padding: 16px; }
+        .setup-card { padding: 14px; }
+        .journal-row { padding: 14px; }
         .stImage { width: 100% !important; }
-        .main-title { font-size: 1.6rem !important; }
+        .main-title { font-size: 1.5rem !important; }
         
         .stTabs [data-baseweb="tab-list"] {
             display: flex;
             flex-wrap: wrap;
-            justify-content: center;
+            justify-content: flex-start;
         }
         
         .stTabs [data-baseweb="tab"] { 
-            padding: 0 8px; 
-            font-size: 0.75rem; 
+            padding: 0 10px; 
+            font-size: 0.8rem; 
             flex: 1 1 auto;
             text-align: center;
-            height: 38px;
-        }
-        
-        .stTabs .stTabs [data-baseweb="tab"] {
-            height: 30px;
-            font-size: 0.7rem;
-            padding: 0 6px;
+            height: 36px;
         }
     }
 </style>
@@ -393,15 +424,13 @@ def render_stock_deep_dive(ticker, key_prefix):
             sign = "+" if diff >= 0 else ""
             
             st.markdown(f"""
-            <div style='margin-bottom: 15px; margin-top: 5px;'>
-                <span style='font-size: 2.2rem; font-weight: 800; color: #F8FAFC; letter-spacing: -1px;'>${current_price:.2f}</span>
-                <span style='color: {color}; font-size: 1.1rem; font-weight: 600; margin-left: 12px;'>
+            <div style='margin-bottom: 12px; margin-top: 4px;'>
+                <span style='font-size: 2rem; font-weight: 800; color: #FAFAFA; letter-spacing: -1px;'>${current_price:.2f}</span>
+                <span style='color: {color}; font-size: 1rem; font-weight: 600; margin-left: 10px;'>
                     {sign}{diff:.2f} ({sign}{pct_diff:.2f}%)
                 </span>
             </div>
             """, unsafe_allow_html=True)
-            
-            st.line_chart(hist_df['Close'], height=200)
             
             mcap = info.get('marketCap', 0)
             pe = info.get('trailingPE', 'N/A')
@@ -420,18 +449,18 @@ def render_stock_deep_dive(ticker, key_prefix):
             low52_str = f"${low52:.2f}" if low52 != 'N/A' else "N/A"
             
             st.markdown(f"""
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: rgba(15, 23, 42, 0.4); padding: 12px; border-radius: 8px; border: 1px solid #1E293B; margin-top: 10px;">
-                <div><div style="color:#64748B; font-size:0.65rem; font-weight:700;">MKT CAP</div><div style="font-size:0.9rem; font-weight:600; color:#E2E8F0;">{format_num(mcap)}</div></div>
-                <div><div style="color:#64748B; font-size:0.65rem; font-weight:700;">P/E</div><div style="font-size:0.9rem; font-weight:600; color:#E2E8F0;">{pe_str}</div></div>
-                <div><div style="color:#64748B; font-size:0.65rem; font-weight:700;">52W HIGH</div><div style="font-size:0.9rem; font-weight:600; color:#E2E8F0;">{high52_str}</div></div>
-                <div><div style="color:#64748B; font-size:0.65rem; font-weight:700;">52W LOW</div><div style="font-size:0.9rem; font-weight:600; color:#E2E8F0;">{low52_str}</div></div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; background: #09090B; padding: 10px; border-radius: 8px; border: 1px solid #27272A;">
+                <div><div style="color:#71717A; font-size:0.65rem; font-weight:700;">MKT CAP</div><div style="font-size:0.85rem; font-weight:600; color:#E4E4E7;">{format_num(mcap)}</div></div>
+                <div><div style="color:#71717A; font-size:0.65rem; font-weight:700;">P/E</div><div style="font-size:0.85rem; font-weight:600; color:#E4E4E7;">{pe_str}</div></div>
+                <div><div style="color:#71717A; font-size:0.65rem; font-weight:700;">52W HIGH</div><div style="font-size:0.85rem; font-weight:600; color:#E4E4E7;">{high52_str}</div></div>
+                <div><div style="color:#71717A; font-size:0.65rem; font-weight:700;">52W LOW</div><div style="font-size:0.85rem; font-weight:600; color:#E4E4E7;">{low52_str}</div></div>
             </div>
             """, unsafe_allow_html=True)
             
         else:
             st.warning("No historical data available for this timeframe.")
     except Exception as e:
-        st.caption("Detailed chart unavailable at the moment.")
+        st.caption("Detailed info unavailable at the moment.")
 
 st.markdown("<div class='main-title'>🪙 Aglo Trader <span>Terminal</span></div>", unsafe_allow_html=True)
 
@@ -494,7 +523,7 @@ def render_setup_tab(category_name, state_key):
             except:
                 setup_time = datetime.fromtimestamp(os.path.getmtime(full_path)).strftime('%d/%m/%Y %H:%M')
             
-            st.markdown(f"<div style='color: #64748B; font-size: 0.8rem; margin-bottom: 10px;'>🕒 Identified: {setup_time}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='color: #A1A1AA; font-size: 0.75rem; margin-bottom: 8px; font-weight: 500;'>🕒 Identified: {setup_time}</div>", unsafe_allow_html=True)
             
             base_filename = os.path.splitext(f)[0]
             txt_filepath = os.path.join(img_dir, f"{base_filename}.txt")
@@ -538,14 +567,14 @@ def render_setup_tab(category_name, state_key):
                         <span>{vol_icon} Volume</span>
                         <span>{vol_val:.1f}x</span>
                     </div>
-                    <div class="tech-box-row" style="margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px;">
-                        <span>Target Stop Loss</span>
+                    <div class="tech-box-row" style="margin-top: 4px; border-top: 1px solid #27272A; padding-top: 6px;">
+                        <span>Target SL</span>
                         <span class="tech-box-highlight">${sl_base:.2f} (-{risk_base:.1f}%)</span>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
                 
-                with st.expander("📊 Advanced Chart & Data"):
+                with st.expander("📊 Advanced Data"):
                     render_stock_deep_dive(user_ticker, f"card_{f}")
                 
                 c1, c2 = st.columns([1, 1])
@@ -635,14 +664,14 @@ with main_tab3:
                         <span>{vol_icon} Volume</span>
                         <span>{vol_val:.1f}x</span>
                     </div>
-                    <div class="tech-box-row" style="margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px;">
-                        <span>Target Stop Loss</span>
+                    <div class="tech-box-row" style="margin-top: 4px; border-top: 1px solid #27272A; padding-top: 6px;">
+                        <span>Target SL</span>
                         <span class="tech-box-highlight">${man_sl_base:.2f} (-{man_risk_base:.1f}%)</span>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
                 
-                with st.expander("📊 Advanced Chart & Data"):
+                with st.expander("📊 Advanced Data"):
                     render_stock_deep_dive(man_ticker, "man_dd")
                 
                 mc1, mc2 = st.columns([1, 1])
@@ -718,24 +747,23 @@ with main_tab3:
                 profit_pct = (profit_per_share / row['entry']) * 100 if row['entry'] > 0 else 0
                 
                 if live_p <= row['atr_sl']:
-                    status_html = f"<span style='background: rgba(239,68,68,0.2); color: #EF4444; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; margin-left: 8px;'>🚨 SL HIT (${live_p:.2f}) | P&L: {profit_pct:.2f}% (${total_profit_dlr:.2f})</span>"
+                    status_html = f"<span style='background: rgba(239,68,68,0.15); color: #EF4444; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; margin-left: 8px;'>🚨 SL HIT (${live_p:.2f}) | P&L: {profit_pct:.2f}% (${total_profit_dlr:.2f})</span>"
                 elif profit_per_share > 0:
-                    status_html = f"<span style='background: rgba(16,185,129,0.2); color: #10B981; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; margin-left: 8px;'>🟢 PROFIT (${live_p:.2f}) | P&L: +{profit_pct:.2f}% (+${total_profit_dlr:.2f})</span>"
+                    status_html = f"<span style='background: rgba(16,185,129,0.15); color: #10B981; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; margin-left: 8px;'>🟢 PROFIT (${live_p:.2f}) | P&L: +{profit_pct:.2f}% (+${total_profit_dlr:.2f})</span>"
                 else:
-                    status_html = f"<span style='background: rgba(245,158,11,0.2); color: #F59E0B; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; margin-left: 8px;'>🟡 ACTIVE (${live_p:.2f}) | P&L: {profit_pct:.2f}% (${total_profit_dlr:.2f})</span>"
+                    status_html = f"<span style='background: rgba(245,158,11,0.15); color: #F59E0B; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; margin-left: 8px;'>🟡 ACTIVE (${live_p:.2f}) | P&L: {profit_pct:.2f}% (${total_profit_dlr:.2f})</span>"
             
             html_info = f"""
             <div style='display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 12px;'>
-                <div style='display: flex; align-items: center; flex-wrap: wrap; gap: 8px;'>
-                    <span style='color:#3B82F6; font-size: 1.3rem; font-weight: 800;'>{row['ticker']}</span>
+                <div style='display: flex; align-items: center; flex-wrap: wrap; gap: 6px;'>
+                    <span style='color:#3B82F6; font-size: 1.25rem; font-weight: 800; margin-right: 4px;'>{row['ticker']}</span>
                     {status_html}
-                    <span style='color:#475569; margin-left: 4px;'>|</span>
-                    <span style='font-size: 1rem; color: #E2E8F0;'>Ent: <b>${row['entry']:.2f}</b></span>
-                    <span style='color:#475569;'>|</span>
-                    <span style='font-size: 1rem; color: #E2E8F0;'>SL: <b style='color:#EF4444;'>${row['atr_sl']:.2f}</b> <span style='font-size: 0.85rem; color:#EF4444;'>(-{risk_pct:.1f}%)</span></span>
-                    <span style='color:#475569;'>|</span>
-                    <span style='font-size: 1rem; color: #E2E8F0;'>Qty: <b>{qty}</b></span>
                 </div>
+            </div>
+            <div style='display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;'>
+                <div class='data-pill'>Ent: <b>${row['entry']:.2f}</b></div>
+                <div class='data-pill'>SL: <b style='color:#EF4444;'>${row['atr_sl']:.2f}</b> <span style='font-size: 0.75rem; color:#EF4444; margin-left:2px;'>(-{risk_pct:.1f}%)</span></div>
+                <div class='data-pill'>Qty: <b>{qty}</b></div>
             </div>
             """
             st.markdown(html_info, unsafe_allow_html=True)
@@ -744,7 +772,7 @@ with main_tab3:
                 clean_date = pd.to_datetime(row['timestamp']).strftime('%d/%m/%Y %H:%M')
             except:
                 clean_date = row['timestamp']
-            st.markdown(f"<div style='color: #64748B; font-size: 0.8rem; margin-bottom: 15px;'>📅 Logged on: {clean_date}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='color: #71717A; font-size: 0.75rem; margin-bottom: 15px;'>📅 Logged on: {clean_date}</div>", unsafe_allow_html=True)
             
             c1, c2, c3 = st.columns([2.5, 1, 1.5])
             with c1: show_img = st.toggle("🔍 View Chart", key=f"show_{row['id']}")

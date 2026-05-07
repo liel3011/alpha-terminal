@@ -1,6 +1,5 @@
 import os
 import time
-import sqlite3
 import streamlit as st
 import pandas as pd
 import yfinance as yf
@@ -19,37 +18,6 @@ except ImportError as e:
 load_dotenv()
 st.set_page_config(page_title="Aglo Trader Terminal", layout="wide", page_icon="🪙", initial_sidebar_state="collapsed")
 db = DatabaseManager()
-
-def update_trade_data_dynamic(trade_id, new_entry, new_sl):
-    try:
-        db_dir = 'data'
-        db_files = [f for f in os.listdir(db_dir) if f.endswith('.db')]
-        if not db_files:
-            st.error("Database file not found.")
-            return
-
-        db_file = os.path.join(db_dir, db_files[0])
-        conn = sqlite3.connect(db_file)
-        c = conn.cursor()
-        
-        c.execute("SELECT name FROM sqlite_master WHERE type='table';")
-        tables = [t[0] for t in c.fetchall()]
-        
-        updated = False
-        for t in tables:
-            try:
-                c.execute(f"UPDATE {t} SET entry = ?, atr_sl = ? WHERE id = ?", (new_entry, new_sl, trade_id))
-                conn.commit()
-                updated = True
-                break
-            except Exception:
-                continue
-                
-        conn.close()
-        if not updated:
-            st.error("Failed to update database table.")
-    except Exception as e:
-        st.error(f"Database error: {e}")
 
 st.markdown("""
 <style>
@@ -781,7 +749,7 @@ with main_tab3:
                 new_sl = ec3.number_input("Edit SL", value=float(row['atr_sl']), key=f"ed_s_{row['id']}")
                 
                 if ec4.button("💾 Save", key=f"save_{row['id']}", use_container_width=True):
-                    update_trade_data_dynamic(row['id'], new_ent, new_sl)
+                    db.update_trade_entry_sl(row['id'], new_ent, new_sl)
                     new_full_note = f"QTY:{new_qty}|{display_notes}"
                     db.update_notes(row['id'], new_full_note)
                     st.rerun()

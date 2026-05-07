@@ -234,9 +234,20 @@ st.markdown("""
         line-height: 1.5;
     }
 
-    .stRadio {
-        margin-top: -10px;
-        margin-bottom: -15px;
+    /* Keep Radio Buttons in a Single Scrollable Row */
+    div[role="radiogroup"] {
+        display: flex;
+        flex-wrap: nowrap !important;
+        overflow-x: auto;
+        gap: 15px !important;
+        padding-bottom: 8px;
+    }
+    div[role="radiogroup"]::-webkit-scrollbar {
+        height: 2px;
+    }
+    div[role="radiogroup"]::-webkit-scrollbar-thumb {
+        background: #334155;
+        border-radius: 10px;
     }
 
     @media (max-width: 768px) {
@@ -344,22 +355,23 @@ def get_upcoming_earnings():
 def render_stock_deep_dive(ticker, key_prefix):
     if not ticker: return
     try:
-        # Added 1d timeframe option
         timeframe = st.radio("", ["1d", "5d", "1mo", "3mo", "6mo", "1y", "ytd"], horizontal=True, key=f"tf_{key_prefix}", label_visibility="collapsed")
         
         tkr = yf.Ticker(ticker)
         info = get_stock_info(ticker)
         
-        # Use minute interval for intraday (1d) to show actual daily movement
         if timeframe == "1d":
             hist_df = tkr.history(period="1d", interval="2m")
         else:
             hist_df = tkr.history(period=timeframe)
         
         if not hist_df.empty:
-            current_price = hist_df['Close'].iloc[-1]
-            
-            # For 1d, calculate difference based on previous close like standard financial apps
+            live_data = tkr.history(period="1d", interval="1m")
+            if not live_data.empty:
+                current_price = live_data['Close'].iloc[-1]
+            else:
+                current_price = hist_df['Close'].iloc[-1]
+                
             if timeframe == "1d" and info.get('previousClose'):
                 start_price = info.get('previousClose')
             else:
@@ -372,15 +384,13 @@ def render_stock_deep_dive(ticker, key_prefix):
             sign = "+" if diff >= 0 else ""
             
             st.markdown(f"""
-            <div style='margin-bottom: 10px; margin-top: 5px;'>
+            <div style='margin-bottom: 15px; margin-top: 5px;'>
                 <span style='font-size: 2.2rem; font-weight: 800; color: #F8FAFC; letter-spacing: -1px;'>${current_price:.2f}</span>
                 <span style='color: {color}; font-size: 1.1rem; font-weight: 600; margin-left: 12px;'>
                     {sign}{diff:.2f} ({sign}{pct_diff:.2f}%)
                 </span>
             </div>
             """, unsafe_allow_html=True)
-            
-            st.line_chart(hist_df['Close'], height=200)
             
             mcap = info.get('marketCap', 0)
             pe = info.get('trailingPE', 'N/A')

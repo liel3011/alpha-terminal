@@ -376,9 +376,9 @@ def get_upcoming_earnings():
                         targ_p = info.get('targetMeanPrice', 0)
                         if curr_p > 0 and targ_p > 0:
                             upside = ((targ_p - curr_p) / curr_p) * 100
-                            if upside > 15: score += 15
-                            elif upside > 5: score += 10
-                            elif upside < -5: score -= 15
+                            if upside > 20: score += 10
+                            elif upside > 5: score += 5
+                            elif upside < -5: score -= 10
                             elif upside < -15: score -= 20
 
                         try:
@@ -387,19 +387,19 @@ def get_upcoming_earnings():
                                 past_ed = ed[ed.index < pd.Timestamp.now(tz='UTC')].head(4)
                                 if not past_ed.empty:
                                     avg_surp = past_ed['Surprise(%)'].mean()
-                                    if avg_surp > 0.10: score += 15
-                                    elif avg_surp > 0.03: score += 10
-                                    elif avg_surp < -0.01: score -= 15
+                                    if avg_surp > 0.15: score += 10
+                                    elif avg_surp > 0.05: score += 5
+                                    elif avg_surp < 0: score -= 15
                         except: pass
 
                         ma50 = info.get('fiftyDayAverage', 0)
                         if curr_p > 0 and ma50 > 0:
                             if curr_p > ma50: score += 5
-                            else: score -= 5
+                            else: score -= 15
                             
                         short_pct = info.get('shortPercentOfFloat', 0)
-                        if short_pct and short_pct > 0.05:
-                            score += 5
+                        if short_pct and short_pct > 0.08:
+                            score += 10
 
                         try:
                             exps = tkr.options
@@ -409,10 +409,9 @@ def get_upcoming_earnings():
                                 puts_oi = opt.puts['openInterest'].sum() if 'openInterest' in opt.puts else 0
                                 if calls_oi > 0:
                                     pc_ratio = puts_oi / calls_oi
-                                    if pc_ratio > 1.2: score -= 15
-                                    elif pc_ratio > 1.0: score -= 5
-                                    elif pc_ratio < 0.6: score += 15
-                                    elif pc_ratio < 0.8: score += 5
+                                    if pc_ratio > 1.0: score -= 20
+                                    elif pc_ratio > 0.8: score -= 10
+                                    elif pc_ratio < 0.4: score += 10
                         except: pass
 
                         try:
@@ -420,13 +419,13 @@ def get_upcoming_earnings():
                             if insiders is not None and not insiders.empty:
                                 if 'Shares' in insiders.columns:
                                     net_shares = insiders.head(15)['Shares'].sum()
-                                    if net_shares > 0: score += 10
-                                    elif net_shares < 0: score -= 10
+                                    if net_shares > 10000: score += 10
+                                    elif net_shares < -10000: score -= 10
                         except: pass
 
                         score = max(0, min(100, int(score)))
 
-                        if score >= 75:
+                        if score >= 80:
                             sentiment = f"🔥 High Beat Prob ({score}%)"
                         elif score >= 60:
                             sentiment = f"🟢 Likely Beat ({score}%)"

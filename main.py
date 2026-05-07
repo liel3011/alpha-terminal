@@ -234,20 +234,26 @@ st.markdown("""
         line-height: 1.5;
     }
 
-    /* Keep Radio Buttons in a Single Scrollable Row */
+    /* Strict Mobile Radio Button Fix to Prevent Text Wrapping */
     div[role="radiogroup"] {
-        display: flex;
+        display: flex !important;
         flex-wrap: nowrap !important;
-        overflow-x: auto;
-        gap: 15px !important;
-        padding-bottom: 8px;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        gap: 12px !important;
+        padding-bottom: 8px !important;
+    }
+    div[role="radiogroup"] label {
+        white-space: nowrap !important;
+        min-width: fit-content !important;
+    }
+    div[role="radiogroup"] label p {
+        white-space: nowrap !important;
+        margin: 0 !important;
     }
     div[role="radiogroup"]::-webkit-scrollbar {
-        height: 2px;
-    }
-    div[role="radiogroup"]::-webkit-scrollbar-thumb {
-        background: #334155;
-        border-radius: 10px;
+        height: 0px; 
+        background: transparent;
     }
 
     @media (max-width: 768px) {
@@ -391,6 +397,8 @@ def render_stock_deep_dive(ticker, key_prefix):
                 </span>
             </div>
             """, unsafe_allow_html=True)
+            
+            st.line_chart(hist_df['Close'], height=200)
             
             mcap = info.get('marketCap', 0)
             pe = info.get('trailingPE', 'N/A')

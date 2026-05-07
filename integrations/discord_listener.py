@@ -18,7 +18,7 @@ class DiscordListener:
             "1428152678248091669": "fibonacci"
         }
 
-    def fetch_new_images(self, limit=15):
+    def fetch_new_images(self, limit=30):
         logging.info("Fetching raw images from Discord API across all channels...")
 
         for channel_id, category_name in self.channels.items():

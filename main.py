@@ -234,7 +234,6 @@ st.markdown("""
         line-height: 1.5;
     }
 
-    /* Compress Radio Button Spacing for Timeframes */
     .stRadio {
         margin-top: -10px;
         margin-bottom: -15px;
@@ -304,6 +303,13 @@ def get_technical_data(ticker):
         return {"price": price, "ATR": atr, "RSI": rsi, "VolRatio": vol_ratio}
     except: return None
 
+@st.cache_data(ttl=3600)
+def get_stock_info(ticker):
+    try:
+        return yf.Ticker(ticker).info
+    except:
+        return {}
+
 @st.cache_data(ttl=86400)
 def get_upcoming_earnings():
     major_tickers = ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA', 'NFLX', 'AMD', 'JPM', 'DIS']
@@ -338,27 +344,33 @@ def get_upcoming_earnings():
 def render_stock_deep_dive(ticker, key_prefix):
     if not ticker: return
     try:
-        timeframe = st.radio("", ["5d", "1mo", "3mo", "6mo", "1y", "ytd"], horizontal=True, key=f"tf_{key_prefix}", label_visibility="collapsed")
+        # Added 1d timeframe option
+        timeframe = st.radio("", ["1d", "5d", "1mo", "3mo", "6mo", "1y", "ytd"], horizontal=True, key=f"tf_{key_prefix}", label_visibility="collapsed")
         
         tkr = yf.Ticker(ticker)
-        hist_df = tkr.history(period=timeframe)
+        info = get_stock_info(ticker)
+        
+        # Use minute interval for intraday (1d) to show actual daily movement
+        if timeframe == "1d":
+            hist_df = tkr.history(period="1d", interval="2m")
+        else:
+            hist_df = tkr.history(period=timeframe)
         
         if not hist_df.empty:
-            # Fetch real-time live data for accurate current price
-            live_data = tkr.history(period="1d", interval="1m")
-            if not live_data.empty:
-                current_price = live_data['Close'].iloc[-1]
+            current_price = hist_df['Close'].iloc[-1]
+            
+            # For 1d, calculate difference based on previous close like standard financial apps
+            if timeframe == "1d" and info.get('previousClose'):
+                start_price = info.get('previousClose')
             else:
-                current_price = hist_df['Close'].iloc[-1]
+                start_price = hist_df['Close'].iloc[0]
                 
-            start_price = hist_df['Close'].iloc[0]
             diff = current_price - start_price
             pct_diff = (diff / start_price) * 100
             
             color = "#10B981" if diff >= 0 else "#EF4444"
             sign = "+" if diff >= 0 else ""
             
-            # Ultra-compact live price header
             st.markdown(f"""
             <div style='margin-bottom: 10px; margin-top: 5px;'>
                 <span style='font-size: 2.2rem; font-weight: 800; color: #F8FAFC; letter-spacing: -1px;'>${current_price:.2f}</span>
@@ -370,7 +382,6 @@ def render_stock_deep_dive(ticker, key_prefix):
             
             st.line_chart(hist_df['Close'], height=200)
             
-            info = tkr.info
             mcap = info.get('marketCap', 0)
             pe = info.get('trailingPE', 'N/A')
             high52 = info.get('fiftyTwoWeekHigh', 'N/A')
@@ -387,7 +398,6 @@ def render_stock_deep_dive(ticker, key_prefix):
             high52_str = f"${high52:.2f}" if high52 != 'N/A' else "N/A"
             low52_str = f"${low52:.2f}" if low52 != 'N/A' else "N/A"
             
-            # Clean 4-column metric grid
             st.markdown(f"""
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: rgba(15, 23, 42, 0.4); padding: 12px; border-radius: 8px; border: 1px solid #1E293B;">
                 <div><div style="color:#64748B; font-size:0.65rem; font-weight:700;">MKT CAP</div><div style="font-size:0.9rem; font-weight:600; color:#E2E8F0;">{format_num(mcap)}</div></div>

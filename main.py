@@ -234,33 +234,9 @@ st.markdown("""
         line-height: 1.5;
     }
 
-    /* Force Radio Buttons into a single horizontal scrolling line */
-    .stRadio > div[role="radiogroup"] {
-        display: flex !important;
-        flex-wrap: nowrap !important;
-        overflow-x: auto !important;
-        scrollbar-width: none; 
-        -ms-overflow-style: none;  
-        padding-bottom: 5px;
-    }
-    .stRadio > div[role="radiogroup"]::-webkit-scrollbar {
-        display: none; 
-    }
-
-    /* Live Blinking Dot CSS */
-    .live-dot {
-        height: 10px;
-        width: 10px;
-        background-color: #10B981;
-        border-radius: 50%;
-        display: inline-block;
-        margin-left: 8px;
-        margin-bottom: 2px;
-        animation: blinker 1.5s linear infinite;
-        box-shadow: 0 0 8px #10B981;
-    }
-    @keyframes blinker {
-        50% { opacity: 0.3; }
+    .stRadio {
+        margin-top: -10px;
+        margin-bottom: -15px;
     }
 
     @media (max-width: 768px) {
@@ -353,6 +329,7 @@ def get_upcoming_earnings():
                     next_date = min(future_dates)
                     days_left = (next_date - datetime.now().date()).days
                     results.append({"Ticker": t, "Report Date": next_date.strftime('%Y-%m-%d'), "Days Left": days_left})
+            
             elif isinstance(cal, dict) and 'Earnings Date' in cal:
                 dates = cal['Earnings Date']
                 if not isinstance(dates, list): dates = [dates]
@@ -367,46 +344,41 @@ def get_upcoming_earnings():
 def render_stock_deep_dive(ticker, key_prefix):
     if not ticker: return
     try:
+        # Added 1d timeframe option
         timeframe = st.radio("", ["1d", "5d", "1mo", "3mo", "6mo", "1y", "ytd"], horizontal=True, key=f"tf_{key_prefix}", label_visibility="collapsed")
         
         tkr = yf.Ticker(ticker)
         info = get_stock_info(ticker)
         
+        # Use minute interval for intraday (1d) to show actual daily movement
         if timeframe == "1d":
             hist_df = tkr.history(period="1d", interval="2m")
         else:
             hist_df = tkr.history(period=timeframe)
         
         if not hist_df.empty:
-            # TRUE REAL-TIME FETCH
-            fast_info = tkr.fast_info
-            current_price = fast_info.get('lastPrice', hist_df['Close'].iloc[-1])
+            current_price = hist_df['Close'].iloc[-1]
             
-            if timeframe == "1d":
-                start_price = fast_info.get('previousClose', hist_df['Close'].iloc[0])
+            # For 1d, calculate difference based on previous close like standard financial apps
+            if timeframe == "1d" and info.get('previousClose'):
+                start_price = info.get('previousClose')
             else:
                 start_price = hist_df['Close'].iloc[0]
                 
             diff = current_price - start_price
-            pct_diff = (diff / start_price) * 100 if start_price else 0
+            pct_diff = (diff / start_price) * 100
             
             color = "#10B981" if diff >= 0 else "#EF4444"
             sign = "+" if diff >= 0 else ""
             
-            c_price, c_ref = st.columns([5, 1])
-            with c_price:
-                st.markdown(f"""
-                <div style='margin-bottom: 10px; margin-top: 5px; display: flex; align-items: baseline;'>
-                    <span style='font-size: 2.2rem; font-weight: 800; color: #F8FAFC; letter-spacing: -1px;'>${current_price:.2f}</span>
-                    <span class='live-dot'></span>
-                    <span style='color: {color}; font-size: 1.1rem; font-weight: 600; margin-left: 12px;'>
-                        {sign}{diff:.2f} ({sign}{pct_diff:.2f}%)
-                    </span>
-                </div>
-                """, unsafe_allow_html=True)
-            with c_ref:
-                if st.button("🔄", key=f"ref_{key_prefix}", help="Refresh Live Price"):
-                    st.rerun()
+            st.markdown(f"""
+            <div style='margin-bottom: 10px; margin-top: 5px;'>
+                <span style='font-size: 2.2rem; font-weight: 800; color: #F8FAFC; letter-spacing: -1px;'>${current_price:.2f}</span>
+                <span style='color: {color}; font-size: 1.1rem; font-weight: 600; margin-left: 12px;'>
+                    {sign}{diff:.2f} ({sign}{pct_diff:.2f}%)
+                </span>
+            </div>
+            """, unsafe_allow_html=True)
             
             st.line_chart(hist_df['Close'], height=200)
             

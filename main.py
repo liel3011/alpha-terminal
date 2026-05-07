@@ -287,6 +287,13 @@ def get_technical_data(ticker):
         return {"price": price, "ATR": atr, "RSI": rsi, "VolRatio": vol_ratio}
     except: return None
 
+@st.cache_data(ttl=3600)
+def get_stock_info(ticker):
+    try:
+        return yf.Ticker(ticker).info
+    except:
+        return {}
+
 @st.cache_data(ttl=86400)
 def get_upcoming_earnings():
     major_tickers = ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA', 'NFLX', 'AMD', 'JPM', 'DIS']
@@ -317,6 +324,44 @@ def get_upcoming_earnings():
         except: pass
     return pd.DataFrame(results).sort_values(by="Days Left") if results else pd.DataFrame()
 
+def render_stock_deep_dive(ticker, key_prefix):
+    if not ticker: return
+    try:
+        timeframe = st.radio("Timeframe", ["5d", "1mo", "3mo", "6mo", "1y", "ytd"], horizontal=True, key=f"tf_radio_{key_prefix}")
+        hist_df = yf.Ticker(ticker).history(period=timeframe)
+        
+        if not hist_df.empty:
+            st.line_chart(hist_df['Close'], height=250)
+            info = get_stock_info(ticker)
+            
+            mcap = info.get('marketCap', 0)
+            mcap_str = f"${mcap / 1e9:.2f}B" if mcap else "N/A"
+            pe = info.get('trailingPE', 'N/A')
+            high52 = info.get('fiftyTwoWeekHigh', 'N/A')
+            low52 = info.get('fiftyTwoWeekLow', 'N/A')
+            
+            mc1, mc2, mc3, mc4 = st.columns(4)
+            mc1.metric("Market Cap", mcap_str)
+            
+            if isinstance(pe, float):
+                mc2.metric("P/E Ratio", f"{pe:.2f}")
+            else:
+                mc2.metric("P/E Ratio", "N/A")
+                
+            if high52 != 'N/A':
+                mc3.metric("52W High", f"${high52:.2f}")
+            else:
+                mc3.metric("52W High", "N/A")
+                
+            if low52 != 'N/A':
+                mc4.metric("52W Low", f"${low52:.2f}")
+            else:
+                mc4.metric("52W Low", "N/A")
+        else:
+            st.warning("No historical data available for this ticker.")
+    except Exception as e:
+        st.caption("Detailed chart unavailable at the moment.")
+
 st.markdown("<div class='main-title'>🪙 Aglo Trader <span>Terminal</span></div>", unsafe_allow_html=True)
 
 pulse_data = get_market_pulse()
@@ -344,6 +389,7 @@ st.divider()
 def render_setup_tab(category_name, state_key):
     atr_multiplier = st.number_input("Risk Multiplier (ATR)", 0.5, 5.0, 1.5, 0.5, key=f"atr_{category_name}")
     img_dir = os.path.join("data", f"discord_{category_name}")
+    
     if os.path.exists(img_dir):
         files = sorted([f for f in os.listdir(img_dir) if f.endswith('.png')], 
                        key=lambda x: int(''.join(filter(str.isdigit, x.split('_')[-1]))) if '_' in x else 0, 
@@ -380,6 +426,19 @@ def render_setup_tab(category_name, state_key):
             
             st.markdown(f"<div style='color: #64748B; font-size: 0.8rem; margin-bottom: 10px;'>🕒 Identified: {setup_time}</div>", unsafe_allow_html=True)
             
+            base_filename = os.path.splitext(f)[0]
+            txt_filepath = os.path.join(img_dir, f"{base_filename}.txt")
+            discord_msg = ""
+            if os.path.exists(txt_filepath):
+                try:
+                    with open(txt_filepath, "r", encoding="utf-8") as txt_file:
+                        discord_msg = txt_file.read().strip()
+                except Exception:
+                    pass
+                    
+            if discord_msg:
+                st.markdown(f"<div style='background: rgba(59, 130, 246, 0.1); border-left: 3px solid #3B82F6; padding: 10px; border-radius: 4px; margin-bottom: 12px; font-size: 0.9rem; color: #E2E8F0;'>💬 <i>{discord_msg}</i></div>", unsafe_allow_html=True)
+            
             st.image(full_path, use_container_width=True)
             
             techs = get_technical_data(user_ticker) if user_ticker else None
@@ -415,6 +474,9 @@ def render_setup_tab(category_name, state_key):
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
+                
+                with st.expander("📊 Advanced Chart & Data"):
+                    render_stock_deep_dive(user_ticker, f"card_{f}")
                 
                 c1, c2 = st.columns([1, 1])
                 ent = c1.number_input("Entry Price", value=float(p), key=f"e_{f}")
@@ -499,6 +561,9 @@ with main_tab3:
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
+                
+                with st.expander("📊 Advanced Chart & Data"):
+                    render_stock_deep_dive(man_ticker, "man_dd")
                 
                 mc1, mc2 = st.columns([1, 1])
                 man_ent = mc1.number_input("Entry Price", value=float(man_p), key="man_e")

@@ -1,6 +1,5 @@
 import os
 import time
-import sqlite3
 import streamlit as st
 import pandas as pd
 import yfinance as yf
@@ -66,28 +65,6 @@ st.markdown("""
         background: rgba(59,130,246,0.15); 
         padding: 4px 12px; 
         border-radius: 6px; 
-    }
-
-    [data-testid="metric-container"] {
-        background-color: #18181B;
-        border: 1px solid #27272A;
-        padding: 16px !important; 
-        border-radius: 12px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    }
-    
-    div[data-testid="stMetricValue"] { 
-        font-size: 1.4rem !important; 
-        font-weight: 700; 
-        color: #10B981; 
-    }
-    
-    div[data-testid="stMetricLabel"] { 
-        font-size: 0.75rem !important; 
-        color: #A1A1AA; 
-        text-transform: uppercase; 
-        letter-spacing: 0.5px; 
-        font-weight: 600;
     }
     
     .stTabs [data-baseweb="tab-list"] {
@@ -206,6 +183,15 @@ st.markdown("""
         color: #FFFFFF !important;
     }
     
+    .stButton > button:hover {
+        border-color: #52525B !important;
+    }
+    
+    .stButton > button[kind="primary"]:hover {
+        background-color: #1D4ED8 !important;
+        border-color: #1D4ED8 !important;
+    }
+    
     .stImage img { 
         border-radius: 8px; 
         border: 1px solid #27272A; 
@@ -217,6 +203,11 @@ st.markdown("""
         color: #FAFAFA !important;
         border: 1px solid #27272A !important;
         padding: 8px 12px !important;
+    }
+    
+    .stTextInput>div>div>input:focus, .stNumberInput>div>div>input:focus {
+        border-color: #3B82F6 !important;
+        box-shadow: none !important;
     }
 
     .discord-msg-box {
@@ -345,7 +336,11 @@ def get_stock_info(ticker):
 
 @st.cache_data(ttl=86400)
 def get_upcoming_earnings():
-    major_tickers = ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA', 'NFLX', 'AMD', 'JPM', 'DIS']
+    major_tickers = [
+        'AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'TSLA', 'NFLX', 'AMD', 'JPM', 'DIS',
+        'PLTR', 'ARM', 'SMCI', 'MU', 'INTC', 'SNOW', 'CRWD', 'UBER', 'COIN', 'SOFI', 'ROKU',
+        'PYPL', 'HOOD', 'BA', 'MSTR', 'MARA', 'RIOT', 'SQ', 'SHOP', 'SPOT', 'CRM', 'ABNB', 'CVNA', 'RBLX'
+    ]
     results = []
     for t in major_tickers:
         try:

@@ -184,15 +184,6 @@ st.markdown("""
         color: #FFFFFF !important;
     }
     
-    .stButton > button:hover {
-        border-color: #52525B !important;
-    }
-    
-    .stButton > button[kind="primary"]:hover {
-        background-color: #1D4ED8 !important;
-        border-color: #1D4ED8 !important;
-    }
-    
     .stImage img { 
         border-radius: 8px; 
         border: 1px solid #27272A; 
@@ -204,11 +195,6 @@ st.markdown("""
         color: #FAFAFA !important;
         border: 1px solid #27272A !important;
         padding: 8px 12px !important;
-    }
-    
-    .stTextInput>div>div>input:focus, .stNumberInput>div>div>input:focus {
-        border-color: #3B82F6 !important;
-        box-shadow: none !important;
     }
 
     .discord-msg-box {
@@ -445,23 +431,12 @@ st.markdown("<div class='main-title'>🪙 Aglo Trader <span>Terminal</span></div
 
 pulse_data = get_market_pulse()
 if pulse_data:
-    pulse_html = "<div style='display: flex; justify-content: space-between; gap: 12px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 4px;'>"
+    pulse_html = "<div style='display: flex; gap: 12px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 4px;'>"
     for t, data in pulse_data.items():
-        is_positive = data['change'] >= 0
-        if t == "^VIX":
-            color = "#EF4444" if is_positive else "#10B981"
-        else:
-            color = "#10B981" if is_positive else "#EF4444"
-        
-        sign = "+" if data['change'] >= 0 else ""
-        
-        pulse_html += f"""
-        <div style='flex: 1; min-width: 100px; background-color: #18181B; border: 1px solid #27272A; border-radius: 12px; padding: 12px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.15);'>
-            <div style='color: #A1A1AA; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;'>{data['name']}</div>
-            <div style='color: #FAFAFA; font-size: 1.15rem; font-weight: 800; margin: 4px 0;'>${data['price']:.2f}</div>
-            <div style='color: {color}; font-size: 0.8rem; font-weight: 600;'>{sign}{data['change']:.2f}%</div>
-        </div>
-        """
+        is_pos = data['change'] >= 0
+        c = "#EF4444" if (t == "^VIX" and is_pos) or (t != "^VIX" and not is_pos) else "#10B981"
+        s = "+" if data['change'] >= 0 else ""
+        pulse_html += f"<div style='flex: 1; min-width: 100px; background-color: #18181B; border: 1px solid #27272A; border-radius: 12px; padding: 12px; text-align: center;'><div style='color: #A1A1AA; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;'>{data['name']}</div><div style='color: #FAFAFA; font-size: 1.15rem; font-weight: 800; margin: 4px 0;'>${data['price']:.2f}</div><div style='color: {c}; font-size: 0.8rem; font-weight: 600;'>{s}{data['change']:.2f}%</div></div>"
     pulse_html += "</div>"
     st.markdown(pulse_html, unsafe_allow_html=True)
 

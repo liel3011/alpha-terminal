@@ -2,7 +2,6 @@ import os
 import requests
 import logging
 import re
-import shutil
 
 logging.basicConfig(level=logging.INFO)
 
@@ -54,12 +53,23 @@ class DiscordListener:
         for msg in messages:
             content = msg.get('content', '')
             snowflake = msg.get('id', '0')
+            
+            # --- SMART TEXT EXTRACTION (INCLUDING EMBEDS) ---
+            full_text = content
+            for embed in msg.get('embeds', []):
+                if 'title' in embed:
+                    full_text += f"\n{embed['title']}"
+                if 'description' in embed:
+                    full_text += f"\n{embed['description']}"
+                for field in embed.get('fields', []):
+                    full_text += f"\n{field.get('name', '')}: {field.get('value', '')}"
+                    
+            full_text = full_text.strip()
 
             # 1. Smart Ticker Extraction from text
             ticker = "SETUP"
-            if content:
-                # Looks for standalone uppercase words between 2 to 5 characters
-                match = re.search(r'\b[A-Z]{2,5}\b', content)
+            if full_text:
+                match = re.search(r'\b[A-Z]{2,5}\b', full_text)
                 if match:
                     ticker = match.group(0)
 
@@ -72,7 +82,6 @@ class DiscordListener:
                     match = re.match(r'^([A-Za-z]{2,5})', orig_filename)
                     if match:
                         candidate = match.group(1).upper()
-                        # Ignore generic discord filenames
                         if candidate not in ["IMAGE", "IMG", "EMBED", "FILE", "UNKNOWN"]:
                             current_ticker = candidate
 
@@ -81,16 +90,15 @@ class DiscordListener:
                 img_filepath = os.path.join(save_dir, f"{base_filename}.png")
                 txt_filepath = os.path.join(save_dir, f"{base_filename}.txt")
 
-                # Download Image
+                # Download Image and Save Text
                 if not os.path.exists(img_filepath):
                     self._download_image(img_url, img_filepath)
                     
-                    # --- NEW FEATURE: SAVE DISCORD MESSAGE ---
-                    # Save the message text into a .txt file so the UI can read it
-                    if content.strip():
+                    # Save the compiled message text into a .txt file
+                    if full_text:
                         try:
                             with open(txt_filepath, "w", encoding="utf-8") as txt_file:
-                                txt_file.write(content.strip())
+                                txt_file.write(full_text)
                         except Exception as e:
                             logging.error(f"Failed to save message text for {current_ticker}: {e}")
 

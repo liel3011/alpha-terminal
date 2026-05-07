@@ -6,7 +6,6 @@ import shutil
 
 logging.basicConfig(level=logging.INFO)
 
-
 class DiscordListener:
     def __init__(self, token, base_dir='data'):
         self.token = token
@@ -26,8 +25,7 @@ class DiscordListener:
         for channel_id, category_name in self.channels.items():
             category_dir = os.path.join(self.base_dir, f"discord_{category_name}")
 
-            # --- NEW FEATURE: CLEAR FOLDER BEFORE SYNCING ---
-            # If the folder exists, delete all its contents to keep the scanner fresh
+            # --- CLEAR FOLDER BEFORE SYNCING ---
             if os.path.exists(category_dir):
                 for filename in os.listdir(category_dir):
                     file_path = os.path.join(category_dir, filename)
@@ -78,12 +76,23 @@ class DiscordListener:
                         if candidate not in ["IMAGE", "IMG", "EMBED", "FILE", "UNKNOWN"]:
                             current_ticker = candidate
 
-                filename = f"{current_ticker}_{unique_id}.png"
-                filepath = os.path.join(save_dir, filename)
+                # Define base filename for both image and text
+                base_filename = f"{current_ticker}_{unique_id}"
+                img_filepath = os.path.join(save_dir, f"{base_filename}.png")
+                txt_filepath = os.path.join(save_dir, f"{base_filename}.txt")
 
-                # Download using the FULL URL
-                if not os.path.exists(filepath):
-                    self._download_image(img_url, filepath)
+                # Download Image
+                if not os.path.exists(img_filepath):
+                    self._download_image(img_url, img_filepath)
+                    
+                    # --- NEW FEATURE: SAVE DISCORD MESSAGE ---
+                    # Save the message text into a .txt file so the UI can read it
+                    if content.strip():
+                        try:
+                            with open(txt_filepath, "w", encoding="utf-8") as txt_file:
+                                txt_file.write(content.strip())
+                        except Exception as e:
+                            logging.error(f"Failed to save message text for {current_ticker}: {e}")
 
             # A. Process Direct Attachments
             for attachment in msg.get('attachments', []):

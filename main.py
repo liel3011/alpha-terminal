@@ -67,6 +67,28 @@ st.markdown("""
         padding: 4px 12px; 
         border-radius: 6px; 
     }
+
+    [data-testid="metric-container"] {
+        background-color: #18181B;
+        border: 1px solid #27272A;
+        padding: 16px !important; 
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    
+    div[data-testid="stMetricValue"] { 
+        font-size: 1.4rem !important; 
+        font-weight: 700; 
+        color: #10B981; 
+    }
+    
+    div[data-testid="stMetricLabel"] { 
+        font-size: 0.75rem !important; 
+        color: #A1A1AA; 
+        text-transform: uppercase; 
+        letter-spacing: 0.5px; 
+        font-weight: 600;
+    }
     
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
@@ -279,9 +301,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-if 'visible_count_breakouts' not in st.session_state: st.session_state.visible_count_breakouts = 3
-if 'visible_count_trendlines' not in st.session_state: st.session_state.visible_count_trendlines = 3
-if 'visible_count_fibonacci' not in st.session_state: st.session_state.visible_count_fibonacci = 3
+if 'visible_count_breakouts' not in st.session_state: st.session_state.visible_count_breakouts = 5
+if 'visible_count_trendlines' not in st.session_state: st.session_state.visible_count_trendlines = 5
+if 'visible_count_fibonacci' not in st.session_state: st.session_state.visible_count_fibonacci = 5
 
 @st.cache_data(ttl=60)
 def get_market_pulse():
@@ -544,7 +566,7 @@ def render_setup_tab(category_name, state_key):
                 with st.expander("📊 Advanced Data"):
                     render_stock_deep_dive(user_ticker, f"card_{f}")
                 
-                with st.expander("⚙️ Execute Trade Configuration"):
+                with st.expander("⚙️ Execute Trade"):
                     c1, c2 = st.columns([1, 1])
                     ent = c1.number_input("Entry Price", value=float(p), key=f"e_{f}")
                     qty = c2.number_input("Quantity", min_value=1.0, value=10.0, step=1.0, key=f"q_{f}")
@@ -568,7 +590,7 @@ def render_setup_tab(category_name, state_key):
 
         if len(unique_setups) > st.session_state[state_key]:
             if st.button("Load More Setups", use_container_width=True, key=f"m_{category_name}"):
-                st.session_state[state_key] += 3
+                st.session_state[state_key] += 5
                 st.rerun()
 
 main_tab1, main_tab2, main_tab3 = st.tabs(["📊 Scanners", "📅 Earn", "📓 Log"])
@@ -643,7 +665,7 @@ with main_tab3:
                 with st.expander("📊 Advanced Data"):
                     render_stock_deep_dive(man_ticker, "man_dd")
                 
-                with st.expander("⚙️ Execute Trade Configuration"):
+                with st.expander("⚙️ Execute Trade"):
                     mc1, mc2 = st.columns([1, 1])
                     man_ent = mc1.number_input("Entry Price", value=float(man_p), key="man_e")
                     man_qty = mc2.number_input("Quantity", min_value=1.0, value=10.0, step=1.0, key="man_q")

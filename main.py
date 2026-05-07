@@ -1,5 +1,6 @@
 import os
 import time
+import sqlite3
 import streamlit as st
 import pandas as pd
 import yfinance as yf
@@ -18,6 +19,15 @@ except ImportError as e:
 load_dotenv()
 st.set_page_config(page_title="Aglo Trader Terminal", layout="wide", page_icon="🪙", initial_sidebar_state="collapsed")
 db = DatabaseManager()
+
+def update_trade_data_supabase(db_instance, trade_id, new_entry, new_sl):
+    try:
+        db_instance.supabase.table("trades").update({
+            "entry": float(new_entry),
+            "atr_sl": float(new_sl)
+        }).eq("id", trade_id).execute()
+    except Exception as e:
+        st.error(f"Database error: {e}")
 
 st.markdown("""
 <style>
@@ -391,6 +401,8 @@ def render_stock_deep_dive(ticker, key_prefix):
             </div>
             """, unsafe_allow_html=True)
             
+            st.line_chart(hist_df['Close'], height=200)
+            
             mcap = info.get('marketCap', 0)
             pe = info.get('trailingPE', 'N/A')
             high52 = info.get('fiftyTwoWeekHigh', 'N/A')
@@ -408,7 +420,7 @@ def render_stock_deep_dive(ticker, key_prefix):
             low52_str = f"${low52:.2f}" if low52 != 'N/A' else "N/A"
             
             st.markdown(f"""
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: rgba(15, 23, 42, 0.4); padding: 12px; border-radius: 8px; border: 1px solid #1E293B;">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: rgba(15, 23, 42, 0.4); padding: 12px; border-radius: 8px; border: 1px solid #1E293B; margin-top: 10px;">
                 <div><div style="color:#64748B; font-size:0.65rem; font-weight:700;">MKT CAP</div><div style="font-size:0.9rem; font-weight:600; color:#E2E8F0;">{format_num(mcap)}</div></div>
                 <div><div style="color:#64748B; font-size:0.65rem; font-weight:700;">P/E</div><div style="font-size:0.9rem; font-weight:600; color:#E2E8F0;">{pe_str}</div></div>
                 <div><div style="color:#64748B; font-size:0.65rem; font-weight:700;">52W HIGH</div><div style="font-size:0.9rem; font-weight:600; color:#E2E8F0;">{high52_str}</div></div>
@@ -749,7 +761,7 @@ with main_tab3:
                 new_sl = ec3.number_input("Edit SL", value=float(row['atr_sl']), key=f"ed_s_{row['id']}")
                 
                 if ec4.button("💾 Save", key=f"save_{row['id']}", use_container_width=True):
-                    db.update_trade_entry_sl(row['id'], new_ent, new_sl)
+                    update_trade_data_supabase(db, row['id'], new_ent, new_sl)
                     new_full_note = f"QTY:{new_qty}|{display_notes}"
                     db.update_notes(row['id'], new_full_note)
                     st.rerun()

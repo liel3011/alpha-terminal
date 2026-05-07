@@ -20,13 +20,34 @@ load_dotenv()
 st.set_page_config(page_title="Aglo Trader Terminal", layout="wide", page_icon="🪙", initial_sidebar_state="collapsed")
 db = DatabaseManager()
 
-def update_trade_entry_sl(trade_id, new_entry, new_sl):
+def update_trade_data_dynamic(trade_id, new_entry, new_sl):
     try:
-        conn = sqlite3.connect('data/journal.db')
+        db_dir = 'data'
+        db_files = [f for f in os.listdir(db_dir) if f.endswith('.db')]
+        if not db_files:
+            st.error("Database file not found.")
+            return
+
+        db_file = os.path.join(db_dir, db_files[0])
+        conn = sqlite3.connect(db_file)
         c = conn.cursor()
-        c.execute("UPDATE journal SET entry = ?, atr_sl = ? WHERE id = ?", (new_entry, new_sl, trade_id))
-        conn.commit()
+        
+        c.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = [t[0] for t in c.fetchall()]
+        
+        updated = False
+        for t in tables:
+            try:
+                c.execute(f"UPDATE {t} SET entry = ?, atr_sl = ? WHERE id = ?", (new_entry, new_sl, trade_id))
+                conn.commit()
+                updated = True
+                break
+            except Exception:
+                continue
+                
         conn.close()
+        if not updated:
+            st.error("Failed to update database table.")
     except Exception as e:
         st.error(f"Database error: {e}")
 
@@ -234,7 +255,6 @@ st.markdown("""
         line-height: 1.5;
     }
 
-    /* Strict Mobile Radio Button Fix to Prevent Text Wrapping */
     div[role="radiogroup"] {
         display: flex !important;
         flex-wrap: nowrap !important;
@@ -361,8 +381,13 @@ def get_upcoming_earnings():
 def render_stock_deep_dive(ticker, key_prefix):
     if not ticker: return
     try:
-        timeframe = st.radio("", ["1d", "5d", "1mo", "3mo", "6mo", "1y", "ytd"], horizontal=True, key=f"tf_{key_prefix}", label_visibility="collapsed")
-        
+        c_time, c_ref = st.columns([4, 1])
+        with c_time:
+            timeframe = st.radio("", ["1d", "5d", "1mo", "3mo", "6mo", "1y", "ytd"], horizontal=True, key=f"tf_{key_prefix}", label_visibility="collapsed")
+        with c_ref:
+            if st.button("🔄 Refresh", key=f"ref_{key_prefix}", use_container_width=True):
+                st.rerun()
+
         tkr = yf.Ticker(ticker)
         info = get_stock_info(ticker)
         
@@ -397,8 +422,6 @@ def render_stock_deep_dive(ticker, key_prefix):
                 </span>
             </div>
             """, unsafe_allow_html=True)
-            
-            st.line_chart(hist_df['Close'], height=200)
             
             mcap = info.get('marketCap', 0)
             pe = info.get('trailingPE', 'N/A')
@@ -547,7 +570,9 @@ def render_setup_tab(category_name, state_key):
                 
                 c1, c2 = st.columns([1, 1])
                 ent = c1.number_input("Entry Price", value=float(p), key=f"e_{f}")
-                sl_type = c2.radio("Stop Loss Type", ["Percentage (%)", "Price ($)"], horizontal=True, key=f"sl_type_{f}")
+                qty = c2.number_input("Quantity", min_value=1.0, value=10.0, step=1.0, key=f"q_{f}")
+                
+                sl_type = st.radio("Stop Loss Type", ["Percentage (%)", "Price ($)"], horizontal=True, key=f"sl_type_{f}")
                 
                 if sl_type == "Percentage (%)":
                     sl_pct = st.number_input("Stop Loss (%)", min_value=0.1, max_value=99.0, value=float(f"{risk_base:.1f}"), step=0.5, key=f"sl_pct_{f}")
@@ -557,7 +582,8 @@ def render_setup_tab(category_name, state_key):
                     stop = st.number_input("Stop Loss ($)", value=float(sl_base), key=f"s_{f}")
                 
                 if st.button("📝 Log Trade", use_container_width=True, type="primary", key=f"l_{f}"):
-                    db.log_trade(user_ticker, ent, stop, "", full_path)
+                    note_str = f"QTY:{qty}|"
+                    db.log_trade(user_ticker, ent, stop, note_str, full_path)
                     st.success("Successfully Logged!")
             else:
                 st.caption("Waiting for valid ticker symbol...")
@@ -641,7 +667,9 @@ with main_tab3:
                 
                 mc1, mc2 = st.columns([1, 1])
                 man_ent = mc1.number_input("Entry Price", value=float(man_p), key="man_e")
-                sl_type = mc2.radio("Stop Loss Type", ["Percentage (%)", "Price ($)"], horizontal=True, key="man_sl_type")
+                man_qty = mc2.number_input("Quantity", min_value=1.0, value=10.0, step=1.0, key="man_q")
+                
+                sl_type = st.radio("Stop Loss Type", ["Percentage (%)", "Price ($)"], horizontal=True, key="man_sl_type")
                 
                 if sl_type == "Percentage (%)":
                     man_sl_pct = st.number_input("Stop Loss (%)", min_value=0.1, max_value=99.0, value=float(f"{man_risk_base:.1f}"), step=0.5, key="man_sl_pct")
@@ -651,10 +679,16 @@ with main_tab3:
                     man_stop = st.number_input("Stop Loss ($)", value=float(man_sl_base), key="man_s")
                 
                 if st.button("📝 Log Manual Trade", use_container_width=True, type="primary", key="man_log_btn"):
-                    db.log_trade(man_ticker, man_ent, man_stop, "", "")
+                    note_str = f"QTY:{man_qty}|"
+                    db.log_trade(man_ticker, man_ent, man_stop, note_str, "")
                     st.rerun()
             else:
                 st.caption("Waiting for valid ticker symbol...")
+
+    def on_note_change(t_id, current_qty):
+        new_text = st.session_state[f"n_{t_id}"]
+        full_note = f"QTY:{current_qty}|{new_text}"
+        db.update_notes(t_id, full_note)
 
     st.subheader("Interactive Trading Log")
     log_data = db.get_journal_data()
@@ -679,21 +713,36 @@ with main_tab3:
         
         for _, row in log_data.iterrows():
             st.markdown(f'<div class="journal-row">', unsafe_allow_html=True)
-            risk = ((row['entry'] - row['atr_sl']) / row['entry']) * 100 if row['entry'] > 0 else 0
+            
+            raw_notes = str(row['notes']) if pd.notna(row['notes']) else ""
+            qty = 1.0
+            display_notes = raw_notes
+            
+            if raw_notes.startswith("QTY:"):
+                parts = raw_notes.split("|", 1)
+                try:
+                    qty_str = parts[0].replace("QTY:", "").strip()
+                    qty = float(qty_str)
+                    display_notes = parts[1].strip() if len(parts) > 1 else ""
+                except:
+                    pass
+
+            risk_pct = ((row['entry'] - row['atr_sl']) / row['entry']) * 100 if row['entry'] > 0 else 0
             
             live_techs = get_technical_data(row['ticker'])
             status_html = ""
             if live_techs:
                 live_p = live_techs['price']
-                profit_dlr = live_p - row['entry']
-                profit_pct = (profit_dlr / row['entry']) * 100 if row['entry'] > 0 else 0
+                profit_per_share = live_p - row['entry']
+                total_profit_dlr = profit_per_share * qty
+                profit_pct = (profit_per_share / row['entry']) * 100 if row['entry'] > 0 else 0
                 
                 if live_p <= row['atr_sl']:
-                    status_html = f"<span style='background: rgba(239,68,68,0.2); color: #EF4444; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; margin-left: 8px;'>🚨 SL HIT (${live_p:.2f}) | P&L: {profit_pct:.2f}% (${profit_dlr:.2f})</span>"
-                elif profit_dlr > 0:
-                    status_html = f"<span style='background: rgba(16,185,129,0.2); color: #10B981; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; margin-left: 8px;'>🟢 PROFIT (${live_p:.2f}) | P&L: +{profit_pct:.2f}% (+${profit_dlr:.2f})</span>"
+                    status_html = f"<span style='background: rgba(239,68,68,0.2); color: #EF4444; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; margin-left: 8px;'>🚨 SL HIT (${live_p:.2f}) | P&L: {profit_pct:.2f}% (${total_profit_dlr:.2f})</span>"
+                elif profit_per_share > 0:
+                    status_html = f"<span style='background: rgba(16,185,129,0.2); color: #10B981; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; margin-left: 8px;'>🟢 PROFIT (${live_p:.2f}) | P&L: +{profit_pct:.2f}% (+${total_profit_dlr:.2f})</span>"
                 else:
-                    status_html = f"<span style='background: rgba(245,158,11,0.2); color: #F59E0B; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; margin-left: 8px;'>🟡 ACTIVE (${live_p:.2f}) | P&L: {profit_pct:.2f}% (${profit_dlr:.2f})</span>"
+                    status_html = f"<span style='background: rgba(245,158,11,0.2); color: #F59E0B; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; margin-left: 8px;'>🟡 ACTIVE (${live_p:.2f}) | P&L: {profit_pct:.2f}% (${total_profit_dlr:.2f})</span>"
             
             html_info = f"""
             <div style='display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 12px;'>
@@ -703,7 +752,9 @@ with main_tab3:
                     <span style='color:#475569; margin-left: 4px;'>|</span>
                     <span style='font-size: 1rem; color: #E2E8F0;'>Ent: <b>${row['entry']:.2f}</b></span>
                     <span style='color:#475569;'>|</span>
-                    <span style='font-size: 1rem; color: #E2E8F0;'>SL: <b style='color:#EF4444;'>${row['atr_sl']:.2f}</b> <span style='font-size: 0.85rem; color:#EF4444;'>(-{risk:.1f}%)</span></span>
+                    <span style='font-size: 1rem; color: #E2E8F0;'>SL: <b style='color:#EF4444;'>${row['atr_sl']:.2f}</b> <span style='font-size: 0.85rem; color:#EF4444;'>(-{risk_pct:.1f}%)</span></span>
+                    <span style='color:#475569;'>|</span>
+                    <span style='font-size: 1rem; color: #E2E8F0;'>Qty: <b>{qty}</b></span>
                 </div>
             </div>
             """
@@ -724,11 +775,15 @@ with main_tab3:
                     st.rerun()
             
             if edit_mode:
-                ec1, ec2, ec3 = st.columns(3)
+                ec1, ec2, ec3, ec4 = st.columns(4)
                 new_ent = ec1.number_input("Edit Entry", value=float(row['entry']), key=f"ed_e_{row['id']}")
-                new_sl = ec2.number_input("Edit SL", value=float(row['atr_sl']), key=f"ed_s_{row['id']}")
-                if ec3.button("💾 Save", key=f"save_{row['id']}", use_container_width=True):
-                    update_trade_entry_sl(row['id'], new_ent, new_sl)
+                new_qty = ec2.number_input("Edit Qty", value=float(qty), key=f"ed_q_{row['id']}")
+                new_sl = ec3.number_input("Edit SL", value=float(row['atr_sl']), key=f"ed_s_{row['id']}")
+                
+                if ec4.button("💾 Save", key=f"save_{row['id']}", use_container_width=True):
+                    update_trade_data_dynamic(row['id'], new_ent, new_sl)
+                    new_full_note = f"QTY:{new_qty}|{display_notes}"
+                    db.update_notes(row['id'], new_full_note)
                     st.rerun()
             
             if show_img and row.get('image_data'):
@@ -737,9 +792,8 @@ with main_tab3:
             elif show_img:
                 st.info("No chart available.")
             
-            current_note = row['notes']
-            if current_note and current_note.startswith("Category:"):
-                current_note = ""
+            if display_notes.startswith("Category:"):
+                display_notes = ""
                 
-            st.text_input("Notes:", value=current_note, key=f"n_{row['id']}", placeholder="Add notes...", on_change=lambda r=row['id']: db.update_notes(r, st.session_state[f"n_{r}"]))
+            st.text_input("Notes:", value=display_notes, key=f"n_{row['id']}", placeholder="Add notes...", on_change=on_note_change, args=(row['id'], qty))
             st.markdown('</div>', unsafe_allow_html=True)

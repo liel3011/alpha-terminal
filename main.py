@@ -344,20 +344,25 @@ def get_upcoming_earnings():
     ]
     results = []
     for t in major_tickers:
+        time.sleep(0.1) 
         try:
             tkr = yf.Ticker(t)
-            cal = tkr.calendar
             dates = []
+            cal = tkr.calendar
             
-            if isinstance(cal, pd.DataFrame) and not cal.empty:
-                if 'Earnings Date' in cal.columns:
-                    dates = pd.to_datetime(cal['Earnings Date']).dt.date.tolist()
-                elif isinstance(cal.index, pd.DatetimeIndex):
-                    dates = cal.index.date.tolist()
-            elif isinstance(cal, dict) and 'Earnings Date' in cal:
+            if isinstance(cal, dict) and 'Earnings Date' in cal:
                 raw_dates = cal['Earnings Date']
                 if not isinstance(raw_dates, list): raw_dates = [raw_dates]
-                dates = [pd.to_datetime(d).date() for d in raw_dates]
+                dates = [pd.to_datetime(d).date() for d in raw_dates if pd.notna(d)]
+            elif isinstance(cal, pd.DataFrame) and not cal.empty and 'Earnings Date' in cal.columns:
+                dates = pd.to_datetime(cal['Earnings Date']).dropna().dt.date.tolist()
+            
+            if not dates:
+                try:
+                    ed = tkr.get_earnings_dates(limit=5)
+                    if ed is not None and not ed.empty:
+                        dates = [pd.to_datetime(d).date() for d in ed.index if pd.notna(d)]
+                except: pass
                 
             future_dates = [d for d in dates if d >= datetime.now().date()]
             

@@ -296,6 +296,7 @@ st.markdown("""
 if 'visible_count_breakouts' not in st.session_state: st.session_state.visible_count_breakouts = 5
 if 'visible_count_trendlines' not in st.session_state: st.session_state.visible_count_trendlines = 5
 if 'visible_count_fibonacci' not in st.session_state: st.session_state.visible_count_fibonacci = 5
+if 'fetching_earnings' not in st.session_state: st.session_state.fetching_earnings = False
 
 @st.cache_data(ttl=60)
 def get_market_pulse():
@@ -344,7 +345,7 @@ def get_upcoming_earnings():
     ]
     results = []
     for t in major_tickers:
-        time.sleep(0.1) 
+        time.sleep(0.15) 
         try:
             tkr = yf.Ticker(t)
             dates = []
@@ -680,7 +681,20 @@ with main_tab1:
     with t3: render_setup_tab("fibonacci", "visible_count_fibonacci")
 
 with main_tab2:
-    df = get_upcoming_earnings()
+    ec1, ec2 = st.columns([3, 1])
+    with ec2:
+        if st.button("🔄 Fetch Earnings", use_container_width=True):
+            get_upcoming_earnings.clear()
+            st.session_state.fetching_earnings = True
+            st.rerun()
+            
+    if st.session_state.fetching_earnings:
+        with st.spinner("Scanning Wall Street data... (takes ~15 sec)"):
+            df = get_upcoming_earnings()
+            st.session_state.fetching_earnings = False
+    else:
+        df = get_upcoming_earnings()
+
     if not df.empty:
         def style_days(val):
             if val <= 3: color = '#EF4444' 
@@ -697,7 +711,7 @@ with main_tab2:
             hide_index=True
         )
     else:
-        st.info("No upcoming earnings found.")
+        st.info("No upcoming earnings found. Click 'Fetch Earnings' to scan the market.")
 
 with main_tab3:
     show_manual = st.toggle("➕ Add Manual Trade")
